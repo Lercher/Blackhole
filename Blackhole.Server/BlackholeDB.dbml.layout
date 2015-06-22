@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ordesignerObjectsDiagram dslVersion="1.0.0.0" absoluteBounds="0, 0, 11, 8.5" name="BlackholeDB">
+  <DataContextMoniker Name="/BlackholeDBDataContext" />
+  <nestedChildShapes>
+    <classShape Id="72ef0adf-c5ec-42d1-9ff1-21f402add9e4" absoluteBounds="3.25, 0.5, 2, 1.5785953776041666">
+      <DataClassMoniker Name="/BlackholeDBDataContext/NODE" />
+      <nestedChildShapes>
+        <elementListCompartment Id="b96ad0e0-1bd2-47dc-8b45-1901617715f5" absoluteBounds="3.2649999999999997, 0.96, 1.9700000000000002, 1.0185953776041665" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="a6c1145a-7d08-420a-b4af-8633f5e01460" absoluteBounds="0.5, 0.5, 2, 2.1554996744791666">
+      <DataClassMoniker Name="/BlackholeDBDataContext/QUAD" />
+      <nestedChildShapes>
+        <elementListCompartment Id="c568b965-88bd-40a7-aecb-72e65e125970" absoluteBounds="0.51500000000000012, 0.96, 1.9700000000000002, 1.5954996744791665" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+  </nestedChildShapes>
+</ordesignerObjectsDiagram>
