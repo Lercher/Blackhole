@@ -6,8 +6,9 @@ Public Class CityHashFunction
     Private Shared ReadOnly h As New CityHash(128)
 
     Public Function Hash(b() As Byte, type As Byte) As Guid Implements IHashFunction.Hash
-        ReDim Preserve b(0 To b.Length)
-        b(b.Length) = type
+        Dim originalLength = b.Length
+        ReDim Preserve b(0 To originalLength)
+        b(originalLength) = type
         Return New Guid(h.ComputeHash(b))
     End Function
 End Class

@@ -20,6 +20,7 @@ Public Class SQLStore
     '       : IUpdateableStorage, IUpdateableGenericIOManager, IVirtualRdfProvider<int, int>, IConfigurationSerializable, IDisposable
 
     Private ReadOnly GuidGenerator As IGuidGenerator
+    Private Dataset As Query.Datasets.ISparqlDataset 'stores a context
 
     Public Sub New()
         GuidGenerator = New HashGuidGenerator With {.HashProvider = New CityHashFunction}
@@ -43,11 +44,12 @@ Public Class SQLStore
 
 
 
+    ' ---- Interfaces 
+
     ' primary implementation
     Public Function GetBlankNodeID(value As IBlankNode, createIfNotExists As Boolean) As Guid Implements IVirtualRdfProvider(Of Guid, Guid).GetBlankNodeID
         Dim vn = TryCast(value, IVirtualNode(Of Guid, Guid))
         If vn IsNot Nothing AndAlso vn.Provider Is Me Then Return vn.VirtualID
-        If Not createIfNotExists Then Return Guid.Empty
         Return Guid.NewGuid
     End Function
 
@@ -83,7 +85,6 @@ Public Class SQLStore
     Public Function GetID(value As INode, createIfNotExists As Boolean) As Guid Implements IVirtualRdfProvider(Of Guid, Guid).GetID
         Dim vn = TryCast(value, IVirtualNode(Of Guid, Guid))
         If vn IsNot Nothing AndAlso vn.Provider Is Me Then Return vn.VirtualID
-        If Not createIfNotExists Then Return Guid.Empty
         Return GuidGenerator.fromNode(value)
     End Function
 
@@ -94,12 +95,11 @@ Public Class SQLStore
     Public Function GetValue(g As IGraph, id As Guid) As INode Implements IVirtualRdfProvider(Of Guid, Guid).GetValue
         If Guid.Empty.Equals(id) Then Return Nothing
         Using c = ctxRO
-            Dim qy =
+            Dim n =
                 Aggregate q In c.NODEs
                 Where q.ID = id
-                Select BlackholeNodeFactory.Create(g, BlackholeNodeFactory.ToNodeType(q.type), id, q.value, q.metadata)
                 Into FirstOrDefault()
-            If qy IsNot Nothing Then Return qy
+            If n IsNot Nothing Then Return BlackholeNodeFactory.Create(g, BlackholeNodeFactory.ToNodeType(n.type), id, n.value, n.metadata)
             Return g.CreateBlankNode(id.ToString)
         End Using
     End Function
@@ -112,9 +112,9 @@ Public Class SQLStore
                 From q In c.QUADs
                 Where q.graph = gid
                 Select
-                    s = BlackholeNodeFactory.CreateVirtual(g, BlackholeNodeFactory.ToNodeType(q.subjecttype), q.subject, Me),
-                    p = BlackholeNodeFactory.CreateVirtual(g, BlackholeNodeFactory.ToNodeType(q.predicatetype), q.predicate, Me),
-                    o = BlackholeNodeFactory.CreateVirtual(g, BlackholeNodeFactory.ToNodeType(q.objecttype), q.object, Me)
+                    s = BlackholeNodeFactory.CreateVirtual(g, DS.Unpack(q).Item1, q.subject, Me),
+                    p = BlackholeNodeFactory.CreateVirtual(g, DS.Unpack(q).Item2, q.predicate, Me),
+                    o = BlackholeNodeFactory.CreateVirtual(g, DS.Unpack(q).Item3, q.object, Me)
                 Select New Triple(s, p, o)
             g.Assert(qy)
         End Using
@@ -138,7 +138,9 @@ Public Class SQLStore
     End Function
 
     Private Function EnsureDataset() As Query.Datasets.ISparqlDataset
-        Static Dataset As Query.Datasets.ISparqlDataset = DS.Create(Me)
+        SyncLock Me
+            If Dataset Is Nothing Then Dataset = DS.Create(Me, ctx)
+        End SyncLock
         Return Dataset
     End Function
 
@@ -202,7 +204,7 @@ Public Class SQLStore
     End Property
 
     Public Sub DeleteGraph(graphUri As String) Implements IStorageProvider.DeleteGraph
-        DeleteGraph(BlackholeNodeFactory.toUri(graphUri))        
+        DeleteGraph(BlackholeNodeFactory.toUri(graphUri))
     End Sub
 
     Public Sub DeleteGraph(graphUri As Uri) Implements IStorageProvider.DeleteGraph
@@ -246,16 +248,18 @@ COMMIT
         handler.StartRdf()
         Dim gid = GetGraphID(graphUri)
         Using c = ctxRO
-            Dim qy =
+            Dim qy1 =
                 From q In c.QUADs
                 Where q.graph = gid
                 Join ns In c.NODEs On ns.ID Equals q.subject
                 Join np In c.NODEs On np.ID Equals q.predicate
-                Join no In c.NODEs On no.ID Equals q.object
+                Join no In c.NODEs On no.ID Equals q.object                
+            Dim qy =
+                From q In qy1.ToList
                 Select
-                    s = BlackholeNodeFactory.Create(handler, BlackholeNodeFactory.ToNodeType(ns.type), ns.ID, ns.value, ns.metadata),
-                    p = BlackholeNodeFactory.Create(handler, BlackholeNodeFactory.ToNodeType(np.type), np.ID, np.value, np.metadata),
-                    o = BlackholeNodeFactory.Create(handler, BlackholeNodeFactory.ToNodeType(no.type), no.ID, no.value, no.metadata)
+                    s = BlackholeNodeFactory.Create(handler, BlackholeNodeFactory.ToNodeType(q.ns.type), q.ns.ID, q.ns.value, q.ns.metadata),
+                    p = BlackholeNodeFactory.Create(handler, BlackholeNodeFactory.ToNodeType(q.np.type), q.np.ID, q.np.value, q.np.metadata),
+                    o = BlackholeNodeFactory.Create(handler, BlackholeNodeFactory.ToNodeType(q.no.type), q.no.ID, q.no.value, q.no.metadata)
                 Select New Triple(s, p, o)
             For Each t In qy
                 If Not handler.HandleTriple(t) Then ParserHelper.Stop()
@@ -272,8 +276,9 @@ COMMIT
     Public Sub SaveGraph(g As IGraph) Implements IStorageProvider.SaveGraph
         Dim gid = GetGraphID(g)
         DeleteGraph(g.BaseUri)
+        ' Note g.Nodes does not contain predicate nodes, see http://sourceforge.net/p/dotnetrdf/svn/2338/tree/Trunk/Libraries/core/Core/BaseGraph.cs#l152
         Using c = ctx
-            Dim nqy = From t In g.Nodes Distinct Select n = CreateDBNode(gid, t)
+            Dim nqy = From t In SPONodes(g) Distinct Select n = CreateDBNode(gid, t)
             c.NODEs.InsertAllOnSubmit(nqy)
             c.NODEs.InsertOnSubmit(New NODE With {.ID = gid, .type = 99})
             Dim qy = From t In g.Triples Select q = CreateDBQuad(gid, t.Subject, t.Predicate, t.Object)
@@ -281,6 +286,14 @@ COMMIT
             c.SubmitChanges()
         End Using
     End Sub
+
+    ' Replacement for g.Nodes
+    Private Shared Function SPONodes(g As IGraph) As IEnumerable(Of INode)
+        Dim qs = From t In g.Triples Select t.Subject
+        Dim qp = From t In g.Triples Select t.Predicate
+        Dim qo = From t In g.Triples Select t.Object
+        Return qs.Concat(qp).Concat(qo).Distinct
+    End Function
 
     Private Function CreateDBNode(gid As Guid, n As INode) As NODE
         Return New NODE With {
@@ -294,14 +307,18 @@ COMMIT
     Private Function CreateDBQuad(gid As Guid, s As INode, p As INode, o As INode) As QUAD
         Return New QUAD With {
             .graph = gid,
-            .subjecttype = CByte(s.NodeType),
             .subject = GetID(s),
-            .predicatetype = CByte(p.NodeType),
             .predicate = GetID(p),
-            .objecttype = CByte(p.NodeType),
-            .object = GetID(p)
+            .object = GetID(o),
+            .s25p5o1type = PackTypes(s.NodeType, p.NodeType, o.NodeType)
         }
     End Function
+
+    Private Shared Function PackTypes(snt As NodeType, pnt As NodeType, ont As NodeType) As Byte
+        Const b5 As Byte = 5
+        Return ((CByte(snt) * b5) + CByte(pnt)) * b5 + CByte(ont)
+    End Function
+
 
     Public Sub UpdateGraph(graphUri As String, additions As IEnumerable(Of Triple), removals As IEnumerable(Of Triple)) Implements IStorageProvider.UpdateGraph
         UpdateGraph(BlackholeNodeFactory.toUri(graphUri), additions, removals)
@@ -309,7 +326,40 @@ COMMIT
 
     ' see http://sourceforge.net/p/dotnetrdf/svn/2338/tree/Trunk/Libraries/data.sql/BaseAdoStoreManager.cs#l1099
     Public Sub UpdateGraph(graphUri As Uri, additions As IEnumerable(Of Triple), removals As IEnumerable(Of Triple)) Implements IStorageProvider.UpdateGraph
-
+        Dim gid = GetGraphID(graphUri)
+        Using c = ctx
+            Dim rems = From r In removals
+                Select q = CreateDBQuad(gid, r.Subject, r.Predicate, r.Object)
+            Dim inserts =
+                From add In additions
+                Select CreateDBQuad(gid, add.Subject, add.Predicate, add.Object)
+            c.QUADs.DeleteAllOnSubmit(rems)
+            c.QUADs.InsertAllOnSubmit(inserts)
+            c.SubmitChanges()
+            If removals.Any Then
+                ' delete all nodes without quads that reference them
+                c.ExecuteCommand("DELETE node where node.type != 99 AND not exists (SELECT * from quad where quad.subject=node.id OR quad.predicate=node.id OR quad.object=node.id)")
+            End If
+            If additions.Any Then
+                ' add nodes for quads that have no nodes
+                Dim missingsubjguids = From q In c.QUADs Select qid = q.subject Where Not (Aggregate n In c.NODEs Where n.ID = qid Into Any()) Select qid
+                Dim missingpredguids = From q In c.QUADs Select qid = q.predicate Where Not (Aggregate n In c.NODEs Where n.ID = qid Into Any()) Select qid
+                Dim missingobjguids = From q In c.QUADs Select qid = q.object Where Not (Aggregate n In c.NODEs Where n.ID = qid Into Any()) Select qid
+                Dim d As New Dictionary(Of System.Guid, INode)
+                For Each add In additions
+                    d(GetID(add.Subject)) = add.Subject
+                    d(GetID(add.Predicate)) = add.Predicate
+                    d(GetID(add.Object)) = add.Object
+                Next
+                Dim missingnodes =
+                    From m In missingsubjguids.Concat(missingpredguids).Concat(missingobjguids)
+                    Distinct
+                    Let node = d(m)
+                    Select CreateDBNode(gid, node)
+                c.NODEs.InsertAllOnSubmit(missingnodes)
+                c.SubmitChanges()
+            End If
+        End Using
     End Sub
 
 
@@ -321,6 +371,9 @@ COMMIT
         If Not Me.disposedValue Then
             If disposing Then
                 ' TODO: dispose managed state (managed objects).
+                SyncLock Me
+                    If Dataset IsNot Nothing Then DirectCast(Dataset, IDisposable).Dispose()
+                End SyncLock
             End If
 
             ' TODO: free unmanaged resources (unmanaged objects) and override Finalize() below.

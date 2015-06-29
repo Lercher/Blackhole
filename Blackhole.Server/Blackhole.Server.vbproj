@@ -129,6 +129,7 @@
     <Compile Include="Hashes\HashGuidGenerator.vb" />
     <Compile Include="Hashes\IGuidGenerator.vb" />
     <Compile Include="Hashes\IHashFunction.vb" />
+    <Compile Include="Tryme.vb" />
     <Compile Include="VirtualNodes\HashingAlgebraOptimizer.vb" />
     <Compile Include="MainModule.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />

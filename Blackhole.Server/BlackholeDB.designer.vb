@@ -218,19 +218,15 @@ Partial Public Class QUAD
 	
 	Private Shared emptyChangingEventArgs As PropertyChangingEventArgs = New PropertyChangingEventArgs(String.Empty)
 	
-	Private _graph As System.Guid
-	
 	Private _subject As System.Guid
 	
 	Private _predicate As System.Guid
 	
 	Private _object As System.Guid
 	
-	Private _subjecttype As Byte
+	Private _graph As System.Guid
 	
-	Private _predicatetype As Byte
-	
-	Private _objecttype As Byte
+	Private _s25p5o1type As Byte
 	
     #Region "Extensibility Method Definitions"
     Partial Private Sub OnLoaded()
@@ -238,10 +234,6 @@ Partial Public Class QUAD
     Partial Private Sub OnValidate(action As System.Data.Linq.ChangeAction)
     End Sub
     Partial Private Sub OnCreated()
-    End Sub
-    Partial Private Sub OngraphChanging(value As System.Guid)
-    End Sub
-    Partial Private Sub OngraphChanged()
     End Sub
     Partial Private Sub OnsubjectChanging(value As System.Guid)
     End Sub
@@ -255,17 +247,13 @@ Partial Public Class QUAD
     End Sub
     Partial Private Sub OnobjectChanged()
     End Sub
-    Partial Private Sub OnsubjecttypeChanging(value As Byte)
+    Partial Private Sub OngraphChanging(value As System.Guid)
     End Sub
-    Partial Private Sub OnsubjecttypeChanged()
+    Partial Private Sub OngraphChanged()
     End Sub
-    Partial Private Sub OnpredicatetypeChanging(value As Byte)
+    Partial Private Sub Ons25p5o1typeChanging(value As Byte)
     End Sub
-    Partial Private Sub OnpredicatetypeChanged()
-    End Sub
-    Partial Private Sub OnobjecttypeChanging(value As Byte)
-    End Sub
-    Partial Private Sub OnobjecttypeChanged()
+    Partial Private Sub Ons25p5o1typeChanged()
     End Sub
     #End Region
 	
@@ -273,23 +261,6 @@ Partial Public Class QUAD
 		MyBase.New
 		OnCreated
 	End Sub
-	
-	<Global.System.Data.Linq.Mapping.ColumnAttribute(Storage:="_graph", DbType:="UniqueIdentifier NOT NULL", IsPrimaryKey:=true)>  _
-	Public Property graph() As System.Guid
-		Get
-			Return Me._graph
-		End Get
-		Set
-			If ((Me._graph = value)  _
-						= false) Then
-				Me.OngraphChanging(value)
-				Me.SendPropertyChanging
-				Me._graph = value
-				Me.SendPropertyChanged("graph")
-				Me.OngraphChanged
-			End If
-		End Set
-	End Property
 	
 	<Global.System.Data.Linq.Mapping.ColumnAttribute(Storage:="_subject", DbType:="UniqueIdentifier NOT NULL", IsPrimaryKey:=true)>  _
 	Public Property subject() As System.Guid
@@ -342,53 +313,36 @@ Partial Public Class QUAD
 		End Set
 	End Property
 	
-	<Global.System.Data.Linq.Mapping.ColumnAttribute(Storage:="_subjecttype", DbType:="TinyInt NOT NULL")>  _
-	Public Property subjecttype() As Byte
+	<Global.System.Data.Linq.Mapping.ColumnAttribute(Storage:="_graph", DbType:="UniqueIdentifier NOT NULL", IsPrimaryKey:=true)>  _
+	Public Property graph() As System.Guid
 		Get
-			Return Me._subjecttype
+			Return Me._graph
 		End Get
 		Set
-			If ((Me._subjecttype = value)  _
+			If ((Me._graph = value)  _
 						= false) Then
-				Me.OnsubjecttypeChanging(value)
+				Me.OngraphChanging(value)
 				Me.SendPropertyChanging
-				Me._subjecttype = value
-				Me.SendPropertyChanged("subjecttype")
-				Me.OnsubjecttypeChanged
+				Me._graph = value
+				Me.SendPropertyChanged("graph")
+				Me.OngraphChanged
 			End If
 		End Set
 	End Property
 	
-	<Global.System.Data.Linq.Mapping.ColumnAttribute(Storage:="_predicatetype", DbType:="TinyInt NOT NULL")>  _
-	Public Property predicatetype() As Byte
+	<Global.System.Data.Linq.Mapping.ColumnAttribute(Storage:="_s25p5o1type", DbType:="TinyInt NOT NULL")>  _
+	Public Property s25p5o1type() As Byte
 		Get
-			Return Me._predicatetype
+			Return Me._s25p5o1type
 		End Get
 		Set
-			If ((Me._predicatetype = value)  _
+			If ((Me._s25p5o1type = value)  _
 						= false) Then
-				Me.OnpredicatetypeChanging(value)
+				Me.Ons25p5o1typeChanging(value)
 				Me.SendPropertyChanging
-				Me._predicatetype = value
-				Me.SendPropertyChanged("predicatetype")
-				Me.OnpredicatetypeChanged
-			End If
-		End Set
-	End Property
-	
-	<Global.System.Data.Linq.Mapping.ColumnAttribute(Storage:="_objecttype", DbType:="TinyInt NOT NULL")>  _
-	Public Property objecttype() As Byte
-		Get
-			Return Me._objecttype
-		End Get
-		Set
-			If ((Me._objecttype = value)  _
-						= false) Then
-				Me.OnobjecttypeChanging(value)
-				Me.SendPropertyChanging
-				Me._objecttype = value
-				Me.SendPropertyChanged("objecttype")
-				Me.OnobjecttypeChanged
+				Me._s25p5o1type = value
+				Me.SendPropertyChanged("s25p5o1type")
+				Me.Ons25p5o1typeChanged
 			End If
 		End Set
 	End Property

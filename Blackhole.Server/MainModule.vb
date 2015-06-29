@@ -1,8 +1,15 @@
 ﻿Imports Topshelf
+' http://topshelf.readthedocs.org/en/latest/overview/commandline.html
 
 Module MainModule
 
     Sub Main()
+#If DEBUG Then
+        Tryme.All()
+        Console.ReadLine()
+        Return
+#End If
+
         HostFactory.Run(
             Sub(c)
                 c.Service(Of BlackholeService)(
