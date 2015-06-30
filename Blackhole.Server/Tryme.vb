@@ -26,9 +26,9 @@ Public Class Tryme
 
         g.Assert(New Triple(dotNetRDF, says, helloWorld))
         g.Assert(New Triple(dotNetRDF, says, bonjourMonde))
-        g.Assert(New Triple(helloWorld, helloWorld, helloWorld))
-        g.Assert(New Triple(dotNetRDF, dotNetRDF, dotNetRDF))
-        g.Assert(New Triple(bonjourMonde, bonjourMonde, bonjourMonde))
+        'g.Assert(New Triple(helloWorld, helloWorld, helloWorld))
+        'g.Assert(New Triple(dotNetRDF, dotNetRDF, dotNetRDF))
+        'g.Assert(New Triple(bonjourMonde, bonjourMonde, bonjourMonde))
         Print(g)
 
         Dim st = New SQLStore()

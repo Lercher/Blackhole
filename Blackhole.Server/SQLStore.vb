@@ -1,26 +1,30 @@
+Imports System.Transactions
 Imports VDS
 Imports VDS.RDF
+Imports VDS.RDF.Parsing
+Imports VDS.RDF.Parsing.Handlers
+Imports VDS.RDF.Query
+Imports VDS.RDF.Query.Optimisation
 Imports VDS.RDF.Storage
 Imports VDS.RDF.Storage.Virtualisation
-Imports VDS.RDF.Query.Optimisation
-Imports VDS.RDF.Query
-Imports VDS.RDF.Parsing.Handlers
-Imports VDS.RDF.Parsing
 Imports VDS.RDF.Update
 
 ' see http://sourceforge.net/p/dotnetrdf/svn/2338/tree/Trunk/Libraries/data.sql/BaseAdoStoreManager.cs
 ' and http://sourceforge.net/p/dotnetrdf/svn/2338/tree/Trunk/Libraries/data.sql/Schemas/CreateMicrosoftAdoHashStore.sql
 
+' We use TransactionScope for Transactions:
+' Please note that in .Net 4 this does not need the Distributed Transaction Coordinator Service,
+' since there is only one connection string per operation such as SaveGraph.
+
+
 Public Class SQLStore
     Implements IVirtualRdfProvider(Of Guid, Guid)
     Implements IUpdateableStorage
     Implements IDisposable
-
-
-    '       : IUpdateableStorage, IUpdateableGenericIOManager, IVirtualRdfProvider<int, int>, IConfigurationSerializable, IDisposable
+    'C# : IUpdateableStorage, IUpdateableGenericIOManager, IVirtualRdfProvider<int, int>, IConfigurationSerializable, IDisposable
 
     Private ReadOnly GuidGenerator As IGuidGenerator
-    Private Dataset As Query.Datasets.ISparqlDataset 'stores a context
+    Private Dataset As Query.Datasets.ISparqlDataset 'stores a context and needs to be disposed of
 
     Public Sub New()
         GuidGenerator = New HashGuidGenerator With {.HashProvider = New CityHashFunction}
@@ -253,7 +257,7 @@ COMMIT
                 Where q.graph = gid
                 Join ns In c.NODEs On ns.ID Equals q.subject
                 Join np In c.NODEs On np.ID Equals q.predicate
-                Join no In c.NODEs On no.ID Equals q.object                
+                Join no In c.NODEs On no.ID Equals q.object
             Dim qy =
                 From q In qy1.ToList
                 Select
@@ -275,15 +279,18 @@ COMMIT
 
     Public Sub SaveGraph(g As IGraph) Implements IStorageProvider.SaveGraph
         Dim gid = GetGraphID(g)
-        DeleteGraph(g.BaseUri)
-        ' Note g.Nodes does not contain predicate nodes, see http://sourceforge.net/p/dotnetrdf/svn/2338/tree/Trunk/Libraries/core/Core/BaseGraph.cs#l152
-        Using c = ctx
-            Dim nqy = From t In SPONodes(g) Distinct Select n = CreateDBNode(gid, t)
-            c.NODEs.InsertAllOnSubmit(nqy)
-            c.NODEs.InsertOnSubmit(New NODE With {.ID = gid, .type = 99})
-            Dim qy = From t In g.Triples Select q = CreateDBQuad(gid, t.Subject, t.Predicate, t.Object)
-            c.QUADs.InsertAllOnSubmit(qy)
-            c.SubmitChanges()
+        Using tran = New TransactionScope
+            DeleteGraph(g.BaseUri)
+            ' Note g.Nodes does not contain predicate nodes, see http://sourceforge.net/p/dotnetrdf/svn/2338/tree/Trunk/Libraries/core/Core/BaseGraph.cs#l152
+            Using c = ctx
+                Dim nqy = From t In SPONodes(g) Distinct Select n = CreateDBNode(gid, t)
+                c.NODEs.InsertAllOnSubmit(nqy)
+                c.NODEs.InsertOnSubmit(New NODE With {.ID = gid, .type = 99})
+                Dim qy = From t In g.Triples Select q = CreateDBQuad(gid, t.Subject, t.Predicate, t.Object)
+                c.QUADs.InsertAllOnSubmit(qy)
+                c.SubmitChanges()
+            End Using
+            tran.Complete()
         End Using
     End Sub
 
@@ -327,38 +334,41 @@ COMMIT
     ' see http://sourceforge.net/p/dotnetrdf/svn/2338/tree/Trunk/Libraries/data.sql/BaseAdoStoreManager.cs#l1099
     Public Sub UpdateGraph(graphUri As Uri, additions As IEnumerable(Of Triple), removals As IEnumerable(Of Triple)) Implements IStorageProvider.UpdateGraph
         Dim gid = GetGraphID(graphUri)
-        Using c = ctx
-            Dim rems = From r In removals
-                Select q = CreateDBQuad(gid, r.Subject, r.Predicate, r.Object)
-            Dim inserts =
-                From add In additions
-                Select CreateDBQuad(gid, add.Subject, add.Predicate, add.Object)
-            c.QUADs.DeleteAllOnSubmit(rems)
-            c.QUADs.InsertAllOnSubmit(inserts)
-            c.SubmitChanges()
-            If removals.Any Then
-                ' delete all nodes without quads that reference them
-                c.ExecuteCommand("DELETE node where node.type != 99 AND not exists (SELECT * from quad where quad.subject=node.id OR quad.predicate=node.id OR quad.object=node.id)")
-            End If
-            If additions.Any Then
-                ' add nodes for quads that have no nodes
-                Dim missingsubjguids = From q In c.QUADs Select qid = q.subject Where Not (Aggregate n In c.NODEs Where n.ID = qid Into Any()) Select qid
-                Dim missingpredguids = From q In c.QUADs Select qid = q.predicate Where Not (Aggregate n In c.NODEs Where n.ID = qid Into Any()) Select qid
-                Dim missingobjguids = From q In c.QUADs Select qid = q.object Where Not (Aggregate n In c.NODEs Where n.ID = qid Into Any()) Select qid
-                Dim d As New Dictionary(Of System.Guid, INode)
-                For Each add In additions
-                    d(GetID(add.Subject)) = add.Subject
-                    d(GetID(add.Predicate)) = add.Predicate
-                    d(GetID(add.Object)) = add.Object
-                Next
-                Dim missingnodes =
-                    From m In missingsubjguids.Concat(missingpredguids).Concat(missingobjguids)
-                    Distinct
-                    Let node = d(m)
-                    Select CreateDBNode(gid, node)
-                c.NODEs.InsertAllOnSubmit(missingnodes)
+        Using tran = New TransactionScope
+            Using c = ctx
+                Dim rems = From r In removals
+                    Select q = CreateDBQuad(gid, r.Subject, r.Predicate, r.Object)
+                Dim inserts =
+                    From add In additions
+                    Select CreateDBQuad(gid, add.Subject, add.Predicate, add.Object)
+                c.QUADs.DeleteAllOnSubmit(rems)
+                c.QUADs.InsertAllOnSubmit(inserts)
                 c.SubmitChanges()
-            End If
+                If removals.Any Then
+                    ' delete all nodes without quads that reference them
+                    c.ExecuteCommand("DELETE node where node.type != 99 AND not exists (SELECT * from quad where quad.subject=node.id OR quad.predicate=node.id OR quad.object=node.id)")
+                End If
+                If additions.Any Then
+                    ' add nodes for quads that have no nodes
+                    Dim missingsubjguids = From q In c.QUADs Select qid = q.subject Where Not (Aggregate n In c.NODEs Where n.ID = qid Into Any()) Select qid
+                    Dim missingpredguids = From q In c.QUADs Select qid = q.predicate Where Not (Aggregate n In c.NODEs Where n.ID = qid Into Any()) Select qid
+                    Dim missingobjguids = From q In c.QUADs Select qid = q.object Where Not (Aggregate n In c.NODEs Where n.ID = qid Into Any()) Select qid
+                    Dim d As New Dictionary(Of System.Guid, INode)
+                    For Each add In additions
+                        d(GetID(add.Subject)) = add.Subject
+                        d(GetID(add.Predicate)) = add.Predicate
+                        d(GetID(add.Object)) = add.Object
+                    Next
+                    Dim missingnodes =
+                        From m In missingsubjguids.Concat(missingpredguids).Concat(missingobjguids)
+                        Distinct
+                        Let node = d(m)
+                        Select CreateDBNode(gid, node)
+                    c.NODEs.InsertAllOnSubmit(missingnodes)
+                    c.SubmitChanges()
+                End If
+            End Using
+            tran.Complete()
         End Using
     End Sub
 
