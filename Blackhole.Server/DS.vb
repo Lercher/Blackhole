@@ -15,6 +15,7 @@ Public Class DS
     Private graphdictionary As IDictionary(Of Guid, IGraph)
 
     Public Shared Function Create(store As SQLStore, ctx As BlackholeDBDataContext) As ISparqlDataset
+        ctx.Log = Console.Out
         Return New DS With {.store = store, .ctx = ctx}
     End Function
 
@@ -80,7 +81,7 @@ Public Class DS
                 Dim qy = From n In ctx.NODEs Where n.type = 99
                 For Each node In qy
                     If Not graphdictionary.ContainsKey(node.ID) Then
-                        Dim g = factory.GetGraph(UriFactory.Create(node.value))
+                        Dim g = factory.GetGraph(BlackholeNodeFactory.toUri(node.value))
                         graphdictionary.Add(node.ID, g)
                     End If
                 Next
@@ -92,9 +93,9 @@ Public Class DS
         Dim subjf = Function(g As IGraph, q As QUAD) BlackholeNodeFactory.CreateVirtual(g, Unpack(q).Item1, q.subject, store)
         Dim predf = Function(g As IGraph, q As QUAD) BlackholeNodeFactory.CreateVirtual(g, Unpack(q).Item2, q.predicate, store)
         Dim objf = Function(g As IGraph, q As QUAD) BlackholeNodeFactory.CreateVirtual(g, Unpack(q).Item3, q.object, store)
-        Dim fixedsubjf = Function(g As IGraph, q As QUAD) subj
-        Dim fixedpredf = Function(g As IGraph, q As QUAD) pred
-        Dim fixedobjf = Function(g As IGraph, q As QUAD) obj
+        Dim fixedsubjf = Function(g As IGraph, q As QUAD) Tools.CopyNode(subj, g)
+        Dim fixedpredf = Function(g As IGraph, q As QUAD) Tools.CopyNode(pred, g)
+        Dim fixedobjf = Function(g As IGraph, q As QUAD) Tools.CopyNode(obj, g)
 
         LoadGraphdictionary()
         Dim qy = _
