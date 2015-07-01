@@ -7,13 +7,12 @@ Public Class HashGuidGenerator
     Public Function fromGraphUri(uri As Uri) As Guid Implements IGuidGenerator.fromGraphUri
         If uri Is Nothing Then Return Guid.Empty
         Dim b = enc.GetBytes(uri.ToString())
-        Return HashProvider.Hash(b, CByte(VDS.RDF.NodeType.Uri))
+        Return HashProvider.Hash(b, 99)
     End Function
 
     Public Function fromNode(n As VDS.RDF.INode) As Guid Implements IGuidGenerator.fromNode
-        Static c0 As Char = Chr(0)
         If n Is Nothing Then Return Guid.Empty
-        Dim b = enc.GetBytes(String.Format("{0}{1}{2}", n.ToString(), c0, n.GraphUri))
+        Dim b = enc.GetBytes(n.ToString())
         Return HashProvider.Hash(b, CByte(n.NodeType))
     End Function
 End Class

@@ -48,7 +48,7 @@ Public Class SQLStore
 
 
 
-    ' ---- Interfaces 
+    ' ----------------------------------------------  IVirtualRdfProvider(Of Guid, Guid) -----------------------------------------------------------
 
     ' primary implementation
     Public Function GetBlankNodeID(value As IBlankNode, createIfNotExists As Boolean) As Guid Implements IVirtualRdfProvider(Of Guid, Guid).GetBlankNodeID
@@ -109,9 +109,11 @@ Public Class SQLStore
     End Function
 
     Public Sub LoadGraphVirtual(g As IGraph, graphUri As Uri) Implements IVirtualRdfProvider(Of Guid, Guid).LoadGraphVirtual
+        ' works with but not with my virtual nodes:  LoadGraph(g, graphUri):Return
         Dim gid = GetGraphID(graphUri)
         g.BaseUri = graphUri
         Using c = ctxRO
+            c.Log = Console.Out
             Dim qy =
                 From q In c.QUADs
                 Where q.graph = gid
@@ -133,14 +135,6 @@ Public Class SQLStore
 
     ' ---------------------------------------------- IQueryableStorage -----------------------------------------------------------
 
-    Public Function Query(sparqlQuery As String) As Object Implements IQueryableStorage.Query
-        Dim g As New Graph
-        Dim results = New SparqlResultSet
-        Query(New GraphHandler(g), New ResultSetHandler(results), sparqlQuery)
-        If results.ResultsType = SparqlResultsType.Unknown Then Return g
-        Return results
-    End Function
-
     Private Function EnsureDataset() As Query.Datasets.ISparqlDataset
         SyncLock Me
             If Dataset Is Nothing Then Dataset = DS.Create(Me, ctx)
@@ -160,6 +154,16 @@ Public Class SQLStore
         Processor.ProcessQuery(rdfHandler, resultsHandler, Query)
     End Sub
 
+    Public Function Query(sparqlQuery As String) As Object Implements IQueryableStorage.Query
+        Dim g As New Graph
+        Dim results = New SparqlResultSet
+        Query(New GraphHandler(g), New ResultSetHandler(results), sparqlQuery)
+        If results.ResultsType = SparqlResultsType.Unknown Then Return g
+        Return results
+    End Function
+
+
+    ' ---------------------------------------------- IUpdateableStorage -----------------------------------------------------------
 
     Public Sub Update(sparqlUpdate As String) Implements IUpdateableStorage.Update
         Static Updateparser As New SparqlUpdateParser
@@ -170,6 +174,7 @@ Public Class SQLStore
         Processor.ProcessCommandSet(cmds)
     End Sub
 
+    ' ---------------------------------------------- IStorageCapabilities -----------------------------------------------------------
 
     Public ReadOnly Property DeleteSupported As Boolean Implements IStorageCapabilities.DeleteSupported
         Get
@@ -207,6 +212,8 @@ Public Class SQLStore
         End Get
     End Property
 
+    ' ---------------------------------------------- IStorageProvider -----------------------------------------------------------
+
     Public Sub DeleteGraph(graphUri As String) Implements IStorageProvider.DeleteGraph
         DeleteGraph(BlackholeNodeFactory.toUri(graphUri))
     End Sub
@@ -215,13 +222,9 @@ Public Class SQLStore
         Dim id = GetGraphID(graphUri)
         Using c = ctx
             Dim x = <x>
-BEGIN TRAN
-DELETE n FROM node n inner join quad q on n.id = q.subject WHERE q.graph = {0}
-DELETE n FROM node n inner join quad q on n.id = q.predicate WHERE q.graph = {0}
-DELETE n FROM node n inner join quad q on n.id = q.object WHERE q.graph = {0}
-DELETE FROM node WHERE id = {0}
 DELETE FROM quad WHERE graph = {0}
-COMMIT
+DELETE FROM node WHERE id = {0} AND node.type  = 99
+DELETE FROM node WHERE node.type != 99 AND NOT EXISTS (SELECT * FROM quad WHERE quad.subject=node.id OR quad.predicate=node.id OR quad.object=node.id)
                     </x>
             c.ExecuteCommand(x.Value, id)
         End Using
@@ -229,6 +232,7 @@ COMMIT
 
     Public Function ListGraphs() As IEnumerable(Of Uri) Implements IStorageProvider.ListGraphs
         Using c = ctxRO
+            c.Log = Console.Out
             Dim qy = From n In c.NODEs Where n.type = 99 Select u = n.value Distinct Select BlackholeNodeFactory.toUri(u)
             Return qy.ToArray
         End Using
@@ -252,6 +256,7 @@ COMMIT
         handler.StartRdf()
         Dim gid = GetGraphID(graphUri)
         Using c = ctxRO
+            c.Log = Console.Out
             Dim qy1 =
                 From q In c.QUADs
                 Where q.graph = gid
@@ -283,11 +288,15 @@ COMMIT
             DeleteGraph(g.BaseUri)
             ' Note g.Nodes does not contain predicate nodes, see http://sourceforge.net/p/dotnetrdf/svn/2338/tree/Trunk/Libraries/core/Core/BaseGraph.cs#l152
             Using c = ctx
-                Dim nqy = From t In SPONodes(g) Distinct Select n = CreateDBNode(gid, t)
-                c.NODEs.InsertAllOnSubmit(nqy)
-                c.NODEs.InsertOnSubmit(New NODE With {.ID = gid, .type = 99})
+                Dim allnodes As New HashSet(Of Guid)
+                For Each node In From n In c.NODEs Where n.type <> 99 Select n.ID
+                    allnodes.Add(node)
+                Next
+                Dim nqy = From t In SPONodesDistinct(g) Select n = CreateDBNode(gid, t) Where Not allnodes.Contains(n.ID)
+                c.NODEs.InsertAllOnSubmit(nqy) ' Insert all node values
+                c.NODEs.InsertOnSubmit(New NODE With {.ID = gid, .type = 99, .value = If(g.BaseUri Is Nothing, Nothing, g.BaseUri.ToString)}) ' Insert graphuri as node
                 Dim qy = From t In g.Triples Select q = CreateDBQuad(gid, t.Subject, t.Predicate, t.Object)
-                c.QUADs.InsertAllOnSubmit(qy)
+                c.QUADs.InsertAllOnSubmit(qy) ' insert all quads
                 c.SubmitChanges()
             End Using
             tran.Complete()
@@ -295,7 +304,7 @@ COMMIT
     End Sub
 
     ' Replacement for g.Nodes
-    Private Shared Function SPONodes(g As IGraph) As IEnumerable(Of INode)
+    Private Shared Function SPONodesDistinct(g As IGraph) As IEnumerable(Of INode)
         Dim qs = From t In g.Triples Select t.Subject
         Dim qp = From t In g.Triples Select t.Predicate
         Dim qo = From t In g.Triples Select t.Object
@@ -344,10 +353,6 @@ COMMIT
                 c.QUADs.DeleteAllOnSubmit(rems)
                 c.QUADs.InsertAllOnSubmit(inserts)
                 c.SubmitChanges()
-                If removals.Any Then
-                    ' delete all nodes without quads that reference them
-                    c.ExecuteCommand("DELETE node where node.type != 99 AND not exists (SELECT * from quad where quad.subject=node.id OR quad.predicate=node.id OR quad.object=node.id)")
-                End If
                 If additions.Any Then
                     ' add nodes for quads that have no nodes
                     Dim missingsubjguids = From q In c.QUADs Select qid = q.subject Where Not (Aggregate n In c.NODEs Where n.ID = qid Into Any()) Select qid
@@ -366,6 +371,10 @@ COMMIT
                         Select CreateDBNode(gid, node)
                     c.NODEs.InsertAllOnSubmit(missingnodes)
                     c.SubmitChanges()
+                End If
+                If removals.Any Then
+                    ' delete all nodes without quads that reference them
+                    c.ExecuteCommand("DELETE FROM node WHERE node.type != 99 AND NOT EXISTS (SELECT * FROM quad WHERE quad.subject=node.id OR quad.predicate=node.id OR quad.object=node.id)")
                 End If
             End Using
             tran.Complete()

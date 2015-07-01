@@ -12,12 +12,17 @@ Public Class DS
     Private store As SQLStore
     Private ctx As BlackholeDBDataContext
     Private factory As New GraphFactory
-    Private graphdictionary As IDictionary(Of Guid, IGraph)
+    Private graphUriDictionary As IDictionary(Of Guid, Uri)
 
     Public Shared Function Create(store As SQLStore, ctx As BlackholeDBDataContext) As ISparqlDataset
         ctx.Log = Console.Out
         Return New DS With {.store = store, .ctx = ctx}
     End Function
+
+    Public Sub New()
+        ' We separate our default graph from it's named graphs
+        MyBase.New(unionDefaultGraph:=False)
+    End Sub
 
     Protected Function GraphExists(gid As System.Guid) As Boolean
         Return Aggregate n In ctx.NODEs Where n.ID = gid And n.type = 99 Into Any()
@@ -63,6 +68,7 @@ Public Class DS
         If created OrElse g.IsEmpty Then
             store.LoadGraphVirtual(g, graphUri)
         End If
+        'Tryme.Print(g)
         Return g
     End Function
 
@@ -74,15 +80,14 @@ Public Class DS
         Return HasQUAD(g, s, p, o)
     End Function
 
-    Private Sub LoadGraphdictionary()
+    Private Sub LoadGraphUriDictionary()
         SyncLock Me
-            If graphdictionary Is Nothing Then
-                graphdictionary = New Dictionary(Of Guid, IGraph)
+            If graphUriDictionary Is Nothing Then
+                graphUriDictionary = New Dictionary(Of Guid, Uri)
                 Dim qy = From n In ctx.NODEs Where n.type = 99
                 For Each node In qy
-                    If Not graphdictionary.ContainsKey(node.ID) Then
-                        Dim g = factory.GetGraph(BlackholeNodeFactory.toUri(node.value))
-                        graphdictionary.Add(node.ID, g)
+                    If Not graphUriDictionary.ContainsKey(node.ID) Then
+                        graphUriDictionary.Add(node.ID, BlackholeNodeFactory.toUri(node.value))
                     End If
                 Next
             End If
@@ -97,11 +102,11 @@ Public Class DS
         Dim fixedpredf = Function(g As IGraph, q As QUAD) Tools.CopyNode(pred, g)
         Dim fixedobjf = Function(g As IGraph, q As QUAD) Tools.CopyNode(obj, g)
 
-        LoadGraphdictionary()
+        LoadGraphUriDictionary()
         Dim qy = _
             From q In ctx.QUADs.Where(filter)
             Let
-                g = graphdictionary(q.graph),
+                g = factory(graphUriDictionary(q.graph)),
                 sf = If(subj Is Nothing, subjf, fixedsubjf),
                 pf = If(pred Is Nothing, predf, fixedpredf),
                 obf = If(obj Is Nothing, objf, fixedobjf)
@@ -160,7 +165,7 @@ Public Class DS
 
     Public Overrides ReadOnly Property GraphUris As IEnumerable(Of Uri)
         Get
-            Dim qy = From n In ctx.NODEs Where n.type = 99 Select UriFactory.Create(n.value)
+            Dim qy = From n In ctx.NODEs Where n.type = 99 Select BlackholeNodeFactory.toUri(n.value)
             Return qy
         End Get
     End Property
@@ -204,5 +209,15 @@ Public Class DS
         GC.SuppressFinalize(Me)
     End Sub
 #End Region
+
+
+    Protected Overrides Sub FlushInternal()
+        factory.Reset()
+    End Sub
+
+    Protected Overrides Sub DiscardInternal()
+        factory.Reset()
+    End Sub
+
 
 End Class

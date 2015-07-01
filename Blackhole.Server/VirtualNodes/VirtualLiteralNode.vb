@@ -9,11 +9,17 @@ Public Class VirtualLiteralNode
         MyBase.New(g, id, provider)
     End Sub
 
+    Public Sub New(g As IGraph, id As Guid, provider As IVirtualRdfProvider(Of Guid, Guid), value As ILiteralNode)
+        MyBase.New(g, id, provider, value)
+    End Sub
+
     Public Overrides Function CompareVirtualId(other As Guid) As Integer
         Return If(Me.VirtualID.Equals(other), 0, 1)
     End Function
 
     Public Overrides Function CopyNode(target As IGraph) As INode
-        Return New VirtualLiteralNode(target, VirtualID, Provider)
+        If _value Is Nothing Then Return New VirtualLiteralNode(target, VirtualID, Provider)
+        Return New VirtualLiteralNode(target, VirtualID, Provider, DirectCast(_value, ILiteralNode))
     End Function
+
 End Class
