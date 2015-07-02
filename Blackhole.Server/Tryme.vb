@@ -6,31 +6,32 @@ Imports VDS.RDF.Query.Datasets
 Public Class Tryme
     Public Shared Sub All()
         Console.WriteLine("-----------------------------------------------------------------")
-        'LoadAndQuery()
-        Query()
-        Console.WriteLine("-----------------------------------------------------------------")
-        Exit Sub
-        SaveGraph()
-        SaveBigGraph(100)
-        SaveBigGraph(500)
-        Console.WriteLine("-----------------------------------------------------------------")
+        'SaveGraph()
+        'SaveBigGraph(100)
+        'SaveBigGraph(500)
+        'Console.WriteLine("-----------------------------------------------------------------")
         LoadGraphV()
         Console.WriteLine("-----------------------------------------------------------------")
         LoadGraph()
         Console.WriteLine("-----------------------------------------------------------------")
+        LoadAndQuery()
+        Query()
+        Console.WriteLine("-----------------------------------------------------------------")
     End Sub
 
     Private Shared Sub LoadAndQuery()
-        'Dim g As IGraph = New Graph()
-        'Using st = New SQLStore()
-        '    st.LoadGraph(g, "http://example.org/graph#Big100")
-        '    'st.LoadGraph(g, "")
-        '    Print(g)
-        'End Using
-        Dim g = CreateBigGraph(100)
+        Dim g As IGraph = New Graph()
+        Using st = New SQLStore()
+            st.LoadGraph(g, "http://example.org/graph#Big100")
+            'st.LoadGraph(g, "")
+            'Print(g)
+        End Using
+        'Dim g = CreateBigGraph(100)
         Dim Parser = New SparqlQueryParser(SparqlQuerySyntax.Extended)
         Dim sp = "select  $s $o where { $s <http://example.org/says#12> $o.}"
+        'Dim sp = "select $s $p $o where { $s $p ""Hello World #69"". }"
         'Dim sp = "select  $s $p $o where { $s $p $o }"
+        Console.WriteLine(sp)
         Dim Query = Parser.ParseFromString(sp)
         Dim store = New TripleStore()
         store.Add(g)
@@ -43,13 +44,15 @@ Public Class Tryme
     Private Shared Sub Query()
         Using st = New SQLStore()
             'Dim sp = "select $s $p $o where { $s $p $o }"
-            Dim sp = "select $s $p $o where { $s $p ""Hello World"". }"
+            'Dim sp = "select $s $p $o where { $s $p ""Hello World"". }"
+            'Dim sp = "select $s $p $o where { $s <http://example.org/says> $o}"
             'Dim sp = "select $s $p $o where { $s $p ""Hello World"". $s $p $o. }"
             'Dim sp = "select $s $p $o where { $s $p0 ""Hello World"". $s $p $o. }"
-            ''Dim sp = "select  $s $o where { $s <http://example.org/says#12> $o.}"
+            'Dim sp = "select  $s $o where { $s <http://example.org/says#12> $o.}"
             'Dim sp = "select  $s $o where { Graph <http://example.org/graph#Big100> { $s <http://example.org/says#12> $o.} }"
             'Dim sp = "select  $s $p $o from named <http://example.org/graph#Big100> where { GRAPH <http://example.org/graph#Big100> { $s $p $o. }}"
             'Dim sp = "select  $s $o from named <http://example.org/graph#Big100> where { GRAPH <http://example.org/graph#Big100> { $s <http://example.org/says#12> $o.} }"
+            Dim sp = "select  $s ?g $o from named <http://example.org/graph#Big100> where { GRAPH ?g { $s <http://example.org/says#12> $o.} }"
             Console.WriteLine(sp)
             Dim r = st.Query(sp)
             Print(TryCast(r, SparqlResultSet))
@@ -138,7 +141,7 @@ Public Class Tryme
     Private Shared Sub LoadGraphV()
         Using st = New SQLStore()
             Dim g As IGraph = New Graph()
-            st.LoadGraphVirtual(g, Nothing)
+            st.LoadGraphVirtual(g, UriFactory.Create("http://example.org/graph#Big500"))
             Print(g)
         End Using
     End Sub

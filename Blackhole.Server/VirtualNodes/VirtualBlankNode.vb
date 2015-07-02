@@ -9,11 +9,17 @@ Public Class VirtualBlankNode
         MyBase.New(g, id, provider)
     End Sub
 
+    Public Sub New(g As IGraph, id As Guid, provider As IVirtualRdfProvider(Of Guid, Guid), value As IBlankNode)
+        MyBase.New(g, id, provider, value)
+    End Sub
+
     Public Overrides Function CompareVirtualId(other As Guid) As Integer
-        Return If(Me.VirtualID.Equals(other), 0, 1)
+        ' Guid::CompareTo is properly implemented and thus suitable for here. See https://msdn.microsoft.com/en-us/library/swb03xd9(v=vs.110).aspx
+        Return Me.VirtualID.CompareTo(other)
     End Function
 
     Public Overrides Function CopyNode(target As IGraph) As INode
-        Return New VirtualBlankNode(target, VirtualID, Provider)
+        If _value Is Nothing Then Return New VirtualBlankNode(target, VirtualID, Provider)
+        Return New VirtualBlankNode(target, VirtualID, Provider, DirectCast(_value, IBlankNode))
     End Function
 End Class

@@ -97,6 +97,19 @@ Public Class SQLStore
     End Function
 
     Public Function GetValue(g As IGraph, id As Guid) As INode Implements IVirtualRdfProvider(Of Guid, Guid).GetValue
+        Static cache As New Dictionary(Of Guid, INode)
+        Dim result As INode = Nothing
+        SyncLock cache
+            If Not cache.TryGetValue(id, result) Then
+                result = GetValueImpl(g, id)
+                ' Console.WriteLine("Materialized {0} to {1}", id, result)
+                cache(id) = result
+            End If
+        End SyncLock
+        Return result
+    End Function
+
+    Private Function GetValueImpl(ByVal g As IGraph, ByVal id As Guid) As INode
         If Guid.Empty.Equals(id) Then Return Nothing
         Using c = ctxRO
             Dim n =
@@ -109,7 +122,8 @@ Public Class SQLStore
     End Function
 
     Public Sub LoadGraphVirtual(g As IGraph, graphUri As Uri) Implements IVirtualRdfProvider(Of Guid, Guid).LoadGraphVirtual
-        ' works with but not with my virtual nodes:  LoadGraph(g, graphUri):Return
+        'LoadGraph(g, graphUri) : Return
+        ' works with:  LoadGraph(g, graphUri):Return ' but not with my virtual nodes as follows
         Dim gid = GetGraphID(graphUri)
         g.BaseUri = graphUri
         Using c = ctxRO
@@ -122,7 +136,9 @@ Public Class SQLStore
                     p = BlackholeNodeFactory.CreateVirtual(g, DS.Unpack(q).Item2, q.predicate, Me),
                     o = BlackholeNodeFactory.CreateVirtual(g, DS.Unpack(q).Item3, q.object, Me)
                 Select New Triple(s, p, o)
+            'Console.WriteLine("Asserting virtual query:")
             g.Assert(qy)
+            'Console.WriteLine("Virtual Query asserted")
         End Using
     End Sub
 

@@ -12,6 +12,8 @@ Public Class HashingAlgebraOptimizer
     End Sub
 
     Protected Overrides Function CreateVirtualNode(id As Guid, value As INode) As INode
-        Return BlackholeNodeFactory.CreateVirtual(g:=Nothing, typ:=value.NodeType, id:=id, provider:=Me._provider)
+        ' We need to construct an already materialized virtual node, because we cannot materialize
+        ' literals and uris that come from an e.g. SPARQL query and are thus not stored in the database
+        Return BlackholeNodeFactory.CreateVirtual(g:=Nothing, typ:=value.NodeType, id:=id, provider:=Me._provider, preMaterializedValue:=value)
     End Function
 End Class
