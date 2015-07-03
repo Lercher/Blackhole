@@ -6,10 +6,12 @@ Imports VDS.RDF.Query.Datasets
 Public Class Tryme
     Public Shared Sub All()
         Console.WriteLine("-----------------------------------------------------------------")
+        DeleteData()
+        InsertData()
         'SaveGraph()
         'SaveBigGraph(100)
         'SaveBigGraph(500)
-        'Console.WriteLine("-----------------------------------------------------------------")
+        Console.WriteLine("-----------------------------------------------------------------")
         LoadGraphV()
         Console.WriteLine("-----------------------------------------------------------------")
         LoadGraph()
@@ -18,6 +20,30 @@ Public Class Tryme
         Query()
         Console.WriteLine("-----------------------------------------------------------------")
     End Sub
+
+    Private Shared Sub DeleteData()
+        Using st = New SQLStore
+            st.Update("DELETE DATA { <http://example.org> <http://example.org/says> ""Another one hits the dust."" };")
+            'st.Update("DELETE { <http://example.org> <http://example.org/says> ""Another one hits the dust."" } where { <http://example.org> <http://example.org/says> ""Another one hits the dust."" };")
+        End Using
+        Using st = New SQLStore
+            Dim g As IGraph = New Graph()
+            st.LoadGraph(g, "")
+            Print(g)
+        End Using
+    End Sub
+
+    Private Shared Sub InsertData()
+        Using st = New SQLStore
+            st.Update("INSERT DATA {<http://example.org> <http://example.org/says> ""Another one hits the dust.""; <http://example.org/says> ""Another one hits the dust again""; <http://example.org/says> ""Another one hits the dust for the third time"".}")
+        End Using
+        Using st = New SQLStore
+            Dim g As IGraph = New Graph()
+            st.LoadGraph(g, "")
+            Print(g)
+        End Using
+    End Sub
+
 
     Private Shared Sub LoadAndQuery()
         Dim g As IGraph = New Graph()

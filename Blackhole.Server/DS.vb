@@ -14,9 +14,16 @@ Public Class DS
     Private factory As New GraphFactory
     Private graphUriDictionary As IDictionary(Of Guid, Uri)
 
-    Public Shared Function Create(store As SQLStore, ctx As BlackholeDBDataContext) As ISparqlDataset
+    Public Property UseVirtualization As Boolean = True
+
+    Public Shared Function CreateNonVirtualizing(store As SQLStore, ctx As BlackholeDBDataContext) As ISparqlDataset
         ctx.Log = Console.Out
-        Return New DS With {.store = store, .ctx = ctx}
+        Return New DS With {.store = store, .ctx = ctx, .UseVirtualization = False}
+    End Function
+
+    Public Shared Function CreateVirtualizing(store As SQLStore, ctx As BlackholeDBDataContext) As ISparqlDataset
+        ctx.Log = Console.Out
+        Return New DS With {.store = store, .ctx = ctx, .UseVirtualization = True}
     End Function
 
     Public Sub New()
@@ -56,7 +63,6 @@ Public Class DS
         Return True
     End Function
 
-
     Protected Overrides Function HasGraphInternal(graphUri As Uri) As Boolean
         Dim gid = store.GetGraphID(graphUri)
         Return GraphExists(gid)
@@ -66,9 +72,13 @@ Public Class DS
         Dim created As Boolean
         Dim g = factory.TryGetGraph(graphUri, created)
         If created OrElse g.IsEmpty Then
-            store.LoadGraphVirtual(g, graphUri)
+            If UseVirtualization Then
+                store.LoadGraphVirtual(g, graphUri)
+            Else
+                store.LoadGraph(g, graphUri)
+            End If
         End If
-        'Tryme.Print(g)
+        'Tryme.Print(g) 
         Return g
     End Function
 

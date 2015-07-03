@@ -151,22 +151,14 @@ Public Class SQLStore
 
     ' ---------------------------------------------- IQueryableStorage -----------------------------------------------------------
 
-    Private Function EnsureDataset() As Query.Datasets.ISparqlDataset
-        SyncLock Me
-            If Dataset Is Nothing Then Dataset = DS.Create(Me, ctx)
-        End SyncLock
-        Return Dataset
-    End Function
-
     ' see https://bitbucket.org/dotnetrdf/dotnetrdf/src/df95e1283cecd046b1f6fbf6fb1d396c888dfe20/Libraries/core/net40/Web/BaseSparqlServer.cs?at=default
     Public Sub Query(rdfHandler As IRdfHandler, resultsHandler As ISparqlResultsHandler, sparqlQuery As String) Implements IQueryableStorage.Query
-        Static Parser As New SparqlQueryParser(SparqlQuerySyntax.Extended)
-        Static Optimizer As HashingAlgebraOptimizer = New HashingAlgebraOptimizer(Me)
+        Dim Parser As New SparqlQueryParser(SparqlQuerySyntax.Extended)
         'P.ExpressionFactories = ...
         'P.QueryOptimiser = ...
         Dim Query = Parser.ParseFromString(sparqlQuery)
-        Query.AlgebraOptimisers = New IAlgebraOptimiser() {Optimizer}
-        Static Processor As New LeviathanQueryProcessor(EnsureDataset())
+        Query.AlgebraOptimisers = New IAlgebraOptimiser() {New HashingAlgebraOptimizer(Me)} : Dim dataset = DS.CreateVirtualizing(Me, ctxRO)
+        Dim Processor As New LeviathanQueryProcessor(dataset)
         Processor.ProcessQuery(rdfHandler, resultsHandler, Query)
     End Sub
 
@@ -179,16 +171,6 @@ Public Class SQLStore
     End Function
 
 
-    ' ---------------------------------------------- IUpdateableStorage -----------------------------------------------------------
-
-    Public Sub Update(sparqlUpdate As String) Implements IUpdateableStorage.Update
-        Static Updateparser As New SparqlUpdateParser
-        Static Optimizer As HashingAlgebraOptimizer = New HashingAlgebraOptimizer(Me)
-        Dim cmds = Updateparser.ParseFromString(sparqlUpdate)
-        Static Processor As New LeviathanUpdateProcessor(EnsureDataset())
-        cmds.AlgebraOptimisers = New IAlgebraOptimiser() {Optimizer}
-        Processor.ProcessCommandSet(cmds)
-    End Sub
 
     ' ---------------------------------------------- IStorageCapabilities -----------------------------------------------------------
 
@@ -352,24 +334,57 @@ DELETE FROM node WHERE node.type != 99 AND NOT EXISTS (SELECT * FROM quad WHERE 
     End Function
 
 
+    ' ---------------------------------------------- IUpdateableStorage -----------------------------------------------------------
+
+    Public Sub Update(sparqlUpdate As String) Implements IUpdateableStorage.Update
+        Dim Updateparser As New SparqlUpdateParser
+        Dim cmds = Updateparser.ParseFromString(sparqlUpdate)
+#If DONTNETRDF_SUPPORTS_UPDATING_VIRTUALIZEDGRAPHS Then
+        cmds.AlgebraOptimisers = New IAlgebraOptimiser() {New HashingAlgebraOptimizer(Me)}
+        Dim dataset = DS.CreateVirtualizing(Me, ctx)
+#Else
+        Dim dataset = DS.CreateNonVirtualizing(Me, ctx)
+#End If
+        Dim Processor As New LeviathanUpdateProcessor(dataset)
+        Processor.ProcessCommandSet(cmds)
+    End Sub
+
+    Private Shared Function isEmpty(ts As IEnumerable(Of Triple)) As Boolean
+        If ts Is Nothing Then Return True
+        Return Not ts.Any
+    End Function
+
     Public Sub UpdateGraph(graphUri As String, additions As IEnumerable(Of Triple), removals As IEnumerable(Of Triple)) Implements IStorageProvider.UpdateGraph
         UpdateGraph(BlackholeNodeFactory.toUri(graphUri), additions, removals)
     End Sub
 
     ' see http://sourceforge.net/p/dotnetrdf/svn/2338/tree/Trunk/Libraries/data.sql/BaseAdoStoreManager.cs#l1099
     Public Sub UpdateGraph(graphUri As Uri, additions As IEnumerable(Of Triple), removals As IEnumerable(Of Triple)) Implements IStorageProvider.UpdateGraph
+        If isEmpty(additions) AndAlso isEmpty(removals) Then Return
         Dim gid = GetGraphID(graphUri)
+        Dim tempgid = Guid.NewGuid
         Using tran = New TransactionScope
             Using c = ctx
-                Dim rems = From r In removals
-                    Select q = CreateDBQuad(gid, r.Subject, r.Predicate, r.Object)
-                Dim inserts =
-                    From add In additions
-                    Select CreateDBQuad(gid, add.Subject, add.Predicate, add.Object)
-                c.QUADs.DeleteAllOnSubmit(rems)
-                c.QUADs.InsertAllOnSubmit(inserts)
+                If Not isEmpty(removals) Then
+                    Dim rems = From r In removals
+                        Select q = CreateDBQuad(gid, r.Subject, r.Predicate, r.Object)
+                    For Each q In rems
+                        Dim x = c.ExecuteCommand("DELETE quad WHERE graph={0} AND subject={1} AND predicate={2} AND object={3}", q.graph, q.subject, q.predicate, q.object)
+                        Debug.Assert(x = 1, "Exactly one quad should be deleted")
+                    Next
+                End If
+                If Not isEmpty(additions) Then
+                    ' with a temporary graph id any insert succedes
+                    ' we delete all duplicates afterwards and re-id the inserts
+                    Dim inserts =
+                        From add In additions
+                        Select CreateDBQuad(tempgid, add.Subject, add.Predicate, add.Object)
+                    c.QUADs.InsertAllOnSubmit(inserts)
+                End If
                 c.SubmitChanges()
-                If additions.Any Then
+                If Not isEmpty(additions) Then
+                    ' delete duplicates and give the inserted ones the proper gid:
+                    c.ExecuteCommand("DELETE i FROM quad i INNER JOIN quad q ON q.subject=i.subject AND q.predicate=i.predicate AND q.object=i.object WHERE q.graph={0} AND i.graph={1} ; UPDATE quad SET graph={0} WHERE graph={1}", gid, tempgid)
                     ' add nodes for quads that have no nodes
                     Dim missingsubjguids = From q In c.QUADs Select qid = q.subject Where Not (Aggregate n In c.NODEs Where n.ID = qid Into Any()) Select qid
                     Dim missingpredguids = From q In c.QUADs Select qid = q.predicate Where Not (Aggregate n In c.NODEs Where n.ID = qid Into Any()) Select qid
@@ -388,7 +403,7 @@ DELETE FROM node WHERE node.type != 99 AND NOT EXISTS (SELECT * FROM quad WHERE 
                     c.NODEs.InsertAllOnSubmit(missingnodes)
                     c.SubmitChanges()
                 End If
-                If removals.Any Then
+                If Not isEmpty(removals) Then
                     ' delete all nodes without quads that reference them
                     c.ExecuteCommand("DELETE FROM node WHERE node.type != 99 AND NOT EXISTS (SELECT * FROM quad WHERE quad.subject=node.id OR quad.predicate=node.id OR quad.object=node.id)")
                 End If
