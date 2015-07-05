@@ -27,8 +27,10 @@ Public Module BlackholeNodeFactory
         End Select
     End Function
 
-    Public Function CreateVirtual(g As IGraph, typ As NodeType, id As Guid, provider As IVirtualRdfProvider(Of Guid, Guid), preMaterializedValue As INode) As INode
-        If preMaterializedValue Is Nothing Then Return CreateVirtual(g, typ, id, provider)
+    Public Function CreateVirtual(id As Guid, provider As IVirtualRdfProvider(Of Guid, Guid), preMaterializedValue As INode) As INode
+        If preMaterializedValue Is Nothing Then Throw New ArgumentException("preMaterializedValue is null. Use the other overload of CreateVirtual", "preMaterializedValue")
+        Dim g = preMaterializedValue.Graph
+        Dim typ = preMaterializedValue.NodeType
         Select Case typ
             Case NodeType.Blank '0
                 Return New VirtualBlankNode(g, id, provider, DirectCast(preMaterializedValue, IBlankNode))

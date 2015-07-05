@@ -125,11 +125,13 @@
       <DependentUpon>BlackholeDB.dbml</DependentUpon>
     </Compile>
     <Compile Include="BlackholeService.vb" />
+    <Compile Include="RDF\BlackholeStoreVirtualGraphPersistenceWrapper.vb" />
     <Compile Include="RDF\DS.vb" />
     <Compile Include="Hashes\CityHashFunction.vb" />
     <Compile Include="Hashes\HashGuidGenerator.vb" />
     <Compile Include="Hashes\IGuidGenerator.vb" />
     <Compile Include="Hashes\IHashFunction.vb" />
+    <Compile Include="RDF\StoreVirtualGraphPersistenceWrapper.vb" />
     <Compile Include="Tryme.vb" />
     <Compile Include="VirtualNodes\HashingAlgebraOptimizer.vb" />
     <Compile Include="MainModule.vb" />

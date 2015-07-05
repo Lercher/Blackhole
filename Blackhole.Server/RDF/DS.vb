@@ -17,12 +17,10 @@ Public Class DS
     Public Property UseVirtualization As Boolean = True
 
     Public Shared Function CreateNonVirtualizing(store As SQLStore, ctx As BlackholeDBDataContext) As ISparqlDataset
-        ctx.Log = Console.Out
         Return New DS With {.store = store, .ctx = ctx, .UseVirtualization = False}
     End Function
 
     Public Shared Function CreateVirtualizing(store As SQLStore, ctx As BlackholeDBDataContext) As ISparqlDataset
-        ctx.Log = Console.Out
         Return New DS With {.store = store, .ctx = ctx, .UseVirtualization = True}
     End Function
 
@@ -183,7 +181,7 @@ Public Class DS
 
     Protected Overrides Function GetModifiableGraphInternal(graphUri As Uri) As VDS.RDF.ITransactionalGraph
         Dim g = GetGraphInternal(graphUri)
-        Return New StoreGraphPersistenceWrapper(store, g, graphUri, [writeOnly]:=False)
+        Return New BlackholeStoreVirtualGraphPersistenceWrapper(store, store, g, graphUri, [writeOnly]:=False)
     End Function
 
 

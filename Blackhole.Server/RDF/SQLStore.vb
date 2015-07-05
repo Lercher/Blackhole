@@ -27,27 +27,12 @@ Public Class SQLStore
 
     Private ReadOnly GuidGenerator As IGuidGenerator
     Private Dataset As Query.Datasets.ISparqlDataset 'stores a context and needs to be disposed of
+    Private ctx As BlackholeDBDataContext
 
     Public Sub New()
         GuidGenerator = New HashGuidGenerator With {.HashProvider = New CityHashFunction}
+        ctx = New BlackholeDBDataContext()
     End Sub
-
-
-
-    Private ReadOnly Property ctx As BlackholeDBDataContext
-        Get
-            Return New BlackholeDBDataContext()
-        End Get
-    End Property
-
-    Private ReadOnly Property ctxRO As BlackholeDBDataContext
-        Get
-            Dim c = ctx
-            c.ObjectTrackingEnabled = False
-            Return c
-        End Get
-    End Property
-
 
 
     ' ----------------------------------------------  IVirtualRdfProvider(Of Guid, Guid) -----------------------------------------------------------
@@ -82,9 +67,7 @@ Public Class SQLStore
 
     Public Function GetGraphUri(id As Guid) As Uri Implements IVirtualRdfProvider(Of Guid, Guid).GetGraphUri
         If Guid.Empty.Equals(id) Then Return Nothing
-        Using c = ctxRO
-            Return Aggregate n In c.NODEs Where n.ID = id Select BlackholeNodeFactory.toUri(n.value) Into FirstOrDefault()
-        End Using
+        Return Aggregate n In ctx.NODEs Where n.ID = id Select BlackholeNodeFactory.toUri(n.value) Into FirstOrDefault()
     End Function
 
     ' primary implementation
@@ -113,14 +96,12 @@ Public Class SQLStore
 
     Private Function GetValueImpl(ByVal g As IGraph, ByVal id As Guid) As INode
         If Guid.Empty.Equals(id) Then Return Nothing
-        Using c = ctxRO
-            Dim n =
-                Aggregate q In c.NODEs
+        Dim n =
+                Aggregate q In ctx.NODEs
                 Where q.ID = id
                 Into FirstOrDefault()
-            If n IsNot Nothing Then Return BlackholeNodeFactory.Create(g, BlackholeNodeFactory.ToNodeType(n.type), id, n.value, n.metadata)
-            Return g.CreateBlankNode(id.ToString)
-        End Using
+        If n IsNot Nothing Then Return BlackholeNodeFactory.Create(g, BlackholeNodeFactory.ToNodeType(n.type), id, n.value, n.metadata)
+        Return g.CreateBlankNode(id.ToString)
     End Function
 
     Public Sub LoadGraphVirtual(g As IGraph, graphUri As Uri) Implements IVirtualRdfProvider(Of Guid, Guid).LoadGraphVirtual
@@ -128,20 +109,17 @@ Public Class SQLStore
         ' works with:  LoadGraph(g, graphUri):Return ' but not with my virtual nodes as follows
         Dim gid = GetGraphID(graphUri)
         g.BaseUri = graphUri
-        Using c = ctxRO
-            c.Log = Console.Out
-            Dim qy =
-                From q In c.QUADs
+        Dim qy =
+                From q In ctx.QUADs
                 Where q.graph = gid
                 Select
                     s = BlackholeNodeFactory.CreateVirtual(g, DS.Unpack(q).Item1, q.subject, Me),
                     p = BlackholeNodeFactory.CreateVirtual(g, DS.Unpack(q).Item2, q.predicate, Me),
                     o = BlackholeNodeFactory.CreateVirtual(g, DS.Unpack(q).Item3, q.object, Me)
                 Select New Triple(s, p, o)
-            'Console.WriteLine("Asserting virtual query:")
-            g.Assert(qy)
-            'Console.WriteLine("Virtual Query asserted")
-        End Using
+        'Console.WriteLine("Asserting virtual query:")
+        g.Assert(qy)
+        'Console.WriteLine("Virtual Query asserted")
     End Sub
 
     Public ReadOnly Property NullID As Guid Implements IVirtualRdfProvider(Of Guid, Guid).NullID
@@ -159,7 +137,7 @@ Public Class SQLStore
         'P.ExpressionFactories = ...
         'P.QueryOptimiser = ...
         Dim Query = Parser.ParseFromString(sparqlQuery)
-        Query.AlgebraOptimisers = New IAlgebraOptimiser() {New HashingAlgebraOptimizer(Me)} : Dim dataset = DS.CreateVirtualizing(Me, ctxRO)
+        Query.AlgebraOptimisers = New IAlgebraOptimiser() {New HashingAlgebraOptimizer(Me)} : Dim dataset = DS.CreateVirtualizing(Me, ctx)
         Dim Processor As New LeviathanQueryProcessor(dataset)
         Processor.ProcessQuery(rdfHandler, resultsHandler, Query)
     End Sub
@@ -231,11 +209,8 @@ DELETE FROM node WHERE node.type != 99 AND NOT EXISTS (SELECT * FROM quad WHERE 
     End Sub
 
     Public Function ListGraphs() As IEnumerable(Of Uri) Implements IStorageProvider.ListGraphs
-        Using c = ctxRO
-            c.Log = Console.Out
-            Dim qy = From n In c.NODEs Where n.type = 99 Select u = n.value Distinct Select BlackholeNodeFactory.toUri(u)
-            Return qy.ToArray
-        End Using
+        Dim qy = From n In ctx.NODEs Where n.type = 99 Select u = n.value Distinct Select BlackholeNodeFactory.toUri(u)
+        Return qy.ToArray
     End Function
 
     Public Sub LoadGraph(g As IGraph, graphUri As String) Implements IStorageProvider.LoadGraph
@@ -255,25 +230,22 @@ DELETE FROM node WHERE node.type != 99 AND NOT EXISTS (SELECT * FROM quad WHERE 
         If handler Is Nothing Then Throw New RdfStorageException("Cannot load a Graph using a null RDF Handler")
         handler.StartRdf()
         Dim gid = GetGraphID(graphUri)
-        Using c = ctxRO
-            c.Log = Console.Out
-            Dim qy1 =
-                From q In c.QUADs
+        Dim qy1 =
+                From q In ctx.QUADs
                 Where q.graph = gid
-                Join ns In c.NODEs On ns.ID Equals q.subject
-                Join np In c.NODEs On np.ID Equals q.predicate
-                Join no In c.NODEs On no.ID Equals q.object
-            Dim qy =
-                From q In qy1.ToList
-                Select
-                    s = BlackholeNodeFactory.Create(handler, BlackholeNodeFactory.ToNodeType(q.ns.type), q.ns.ID, q.ns.value, q.ns.metadata),
-                    p = BlackholeNodeFactory.Create(handler, BlackholeNodeFactory.ToNodeType(q.np.type), q.np.ID, q.np.value, q.np.metadata),
-                    o = BlackholeNodeFactory.Create(handler, BlackholeNodeFactory.ToNodeType(q.no.type), q.no.ID, q.no.value, q.no.metadata)
-                Select New Triple(s, p, o)
-            For Each t In qy
-                If Not handler.HandleTriple(t) Then ParserHelper.Stop()
-            Next
-        End Using
+                Join ns In ctx.NODEs On ns.ID Equals q.subject
+                Join np In ctx.NODEs On np.ID Equals q.predicate
+                Join no In ctx.NODEs On no.ID Equals q.object
+        Dim qy =
+            From q In qy1.ToList
+            Select
+                s = BlackholeNodeFactory.Create(handler, BlackholeNodeFactory.ToNodeType(q.ns.type), q.ns.ID, q.ns.value, q.ns.metadata),
+                p = BlackholeNodeFactory.Create(handler, BlackholeNodeFactory.ToNodeType(q.np.type), q.np.ID, q.np.value, q.np.metadata),
+                o = BlackholeNodeFactory.Create(handler, BlackholeNodeFactory.ToNodeType(q.no.type), q.no.ID, q.no.value, q.no.metadata)
+            Select New Triple(s, p, o)
+        For Each t In qy
+            If Not handler.HandleTriple(t) Then ParserHelper.Stop()
+        Next
     End Sub
 
     Public ReadOnly Property ParentServer As Management.IStorageServer Implements IStorageProvider.ParentServer
@@ -348,7 +320,10 @@ DELETE FROM node WHERE node.type != 99 AND NOT EXISTS (SELECT * FROM quad WHERE 
         Dim dataset = DS.CreateNonVirtualizing(Me, ctx)
 #End If
         Dim Processor As New LeviathanUpdateProcessor(dataset)
-        Processor.ProcessCommandSet(cmds)
+        Using tran = New TransactionScope
+            Processor.ProcessCommandSet(cmds)
+            tran.Complete()
+        End Using
     End Sub
 
     Private Shared Function isEmpty(ts As IEnumerable(Of Triple)) As Boolean
@@ -365,52 +340,49 @@ DELETE FROM node WHERE node.type != 99 AND NOT EXISTS (SELECT * FROM quad WHERE 
         If isEmpty(additions) AndAlso isEmpty(removals) Then Return
         Dim gid = GetGraphID(graphUri)
         Dim tempgid = Guid.NewGuid
-        Using tran = New TransactionScope
-            Using c = ctx
-                If Not isEmpty(removals) Then
-                    Dim rems = From r In removals
-                        Select q = CreateDBQuad(gid, r.Subject, r.Predicate, r.Object)
-                    For Each q In rems
-                        Dim x = c.ExecuteCommand("DELETE quad WHERE graph={0} AND subject={1} AND predicate={2} AND object={3}", q.graph, q.subject, q.predicate, q.object)
-                        Debug.Assert(x = 1, "Exactly one quad should be deleted")
-                    Next
-                End If
-                If Not isEmpty(additions) Then
-                    ' with a temporary graph id any insert succedes
-                    ' we delete all duplicates afterwards and re-id the inserts
-                    Dim inserts =
-                        From add In additions
-                        Select CreateDBQuad(tempgid, add.Subject, add.Predicate, add.Object)
-                    c.QUADs.InsertAllOnSubmit(inserts)
-                End If
+        Using c = ctx
+            If Not isEmpty(removals) Then
+                Dim rems = From r In removals
+                    Select q = CreateDBQuad(gid, r.Subject, r.Predicate, r.Object)
+                For Each q In rems
+                    Dim x = c.ExecuteCommand("DELETE quad WHERE graph={0} AND subject={1} AND predicate={2} AND object={3}", q.graph, q.subject, q.predicate, q.object)
+                    Debug.Assert(x = 1, "Exactly one quad should be deleted")
+                Next
+            End If
+            If Not isEmpty(additions) Then
+                ' with a temporary graph id any insert succedes
+                ' we delete all duplicates afterwards and re-id the inserts
+                Dim inserts =
+                    From add In additions
+                    Select CreateDBQuad(tempgid, add.Subject, add.Predicate, add.Object)
+                c.QUADs.InsertAllOnSubmit(inserts)
+            End If
+            c.SubmitChanges()
+            If Not isEmpty(additions) Then
+                ' delete duplicates and give the inserted ones the proper gid:
+                c.ExecuteCommand("DELETE i FROM quad i INNER JOIN quad q ON q.subject=i.subject AND q.predicate=i.predicate AND q.object=i.object WHERE q.graph={0} AND i.graph={1} ; UPDATE quad SET graph={0} WHERE graph={1}", gid, tempgid)
+                ' add nodes for quads that have no nodes
+                Dim missingsubjguids = From q In c.QUADs Select qid = q.subject Where Not (Aggregate n In c.NODEs Where n.ID = qid Into Any()) Select qid
+                Dim missingpredguids = From q In c.QUADs Select qid = q.predicate Where Not (Aggregate n In c.NODEs Where n.ID = qid Into Any()) Select qid
+                Dim missingobjguids = From q In c.QUADs Select qid = q.object Where Not (Aggregate n In c.NODEs Where n.ID = qid Into Any()) Select qid
+                Dim d As New Dictionary(Of System.Guid, INode)
+                For Each add In additions
+                    d(GetID(add.Subject)) = add.Subject
+                    d(GetID(add.Predicate)) = add.Predicate
+                    d(GetID(add.Object)) = add.Object
+                Next
+                Dim missingnodes =
+                    From m In missingsubjguids.Concat(missingpredguids).Concat(missingobjguids)
+                    Distinct
+                    Let node = d(m)
+                    Select CreateDBNode(gid, node)
+                c.NODEs.InsertAllOnSubmit(missingnodes)
                 c.SubmitChanges()
-                If Not isEmpty(additions) Then
-                    ' delete duplicates and give the inserted ones the proper gid:
-                    c.ExecuteCommand("DELETE i FROM quad i INNER JOIN quad q ON q.subject=i.subject AND q.predicate=i.predicate AND q.object=i.object WHERE q.graph={0} AND i.graph={1} ; UPDATE quad SET graph={0} WHERE graph={1}", gid, tempgid)
-                    ' add nodes for quads that have no nodes
-                    Dim missingsubjguids = From q In c.QUADs Select qid = q.subject Where Not (Aggregate n In c.NODEs Where n.ID = qid Into Any()) Select qid
-                    Dim missingpredguids = From q In c.QUADs Select qid = q.predicate Where Not (Aggregate n In c.NODEs Where n.ID = qid Into Any()) Select qid
-                    Dim missingobjguids = From q In c.QUADs Select qid = q.object Where Not (Aggregate n In c.NODEs Where n.ID = qid Into Any()) Select qid
-                    Dim d As New Dictionary(Of System.Guid, INode)
-                    For Each add In additions
-                        d(GetID(add.Subject)) = add.Subject
-                        d(GetID(add.Predicate)) = add.Predicate
-                        d(GetID(add.Object)) = add.Object
-                    Next
-                    Dim missingnodes =
-                        From m In missingsubjguids.Concat(missingpredguids).Concat(missingobjguids)
-                        Distinct
-                        Let node = d(m)
-                        Select CreateDBNode(gid, node)
-                    c.NODEs.InsertAllOnSubmit(missingnodes)
-                    c.SubmitChanges()
-                End If
-                If Not isEmpty(removals) Then
-                    ' delete all nodes without quads that reference them
-                    c.ExecuteCommand("DELETE FROM node WHERE node.type != 99 AND NOT EXISTS (SELECT * FROM quad WHERE quad.subject=node.id OR quad.predicate=node.id OR quad.object=node.id)")
-                End If
-            End Using
-            tran.Complete()
+            End If
+            If Not isEmpty(removals) Then
+                ' delete all nodes without quads that reference them
+                c.ExecuteCommand("DELETE FROM node WHERE node.type != 99 AND NOT EXISTS (SELECT * FROM quad WHERE quad.subject=node.id OR quad.predicate=node.id OR quad.object=node.id)")
+            End If
         End Using
     End Sub
 
