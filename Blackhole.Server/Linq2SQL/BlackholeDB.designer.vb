@@ -31,17 +31,17 @@ Partial Public Class BlackholeDBDataContext
   #Region "Extensibility Method Definitions"
   Partial Private Sub OnCreated()
   End Sub
-  Partial Private Sub InsertNODE(instance As NODE)
-    End Sub
-  Partial Private Sub UpdateNODE(instance As NODE)
-    End Sub
-  Partial Private Sub DeleteNODE(instance As NODE)
-    End Sub
   Partial Private Sub InsertQUAD(instance As QUAD)
     End Sub
   Partial Private Sub UpdateQUAD(instance As QUAD)
     End Sub
   Partial Private Sub DeleteQUAD(instance As QUAD)
+    End Sub
+  Partial Private Sub InsertNODE(instance As NODE)
+    End Sub
+  Partial Private Sub UpdateNODE(instance As NODE)
+    End Sub
+  Partial Private Sub DeleteNODE(instance As NODE)
     End Sub
   #End Region
 	
@@ -70,146 +70,17 @@ Partial Public Class BlackholeDBDataContext
 		OnCreated
 	End Sub
 	
-	Public ReadOnly Property NODEs() As System.Data.Linq.Table(Of NODE)
-		Get
-			Return Me.GetTable(Of NODE)
-		End Get
-	End Property
-	
 	Public ReadOnly Property QUADs() As System.Data.Linq.Table(Of QUAD)
 		Get
 			Return Me.GetTable(Of QUAD)
 		End Get
 	End Property
-End Class
-
-<Global.System.Data.Linq.Mapping.TableAttribute()>  _
-Partial Public Class NODE
-	Implements System.ComponentModel.INotifyPropertyChanging, System.ComponentModel.INotifyPropertyChanged
 	
-	Private Shared emptyChangingEventArgs As PropertyChangingEventArgs = New PropertyChangingEventArgs(String.Empty)
-	
-	Private _ID As System.Guid
-	
-	Private _type As Byte
-	
-	Private _value As String
-	
-	Private _metadata As String
-	
-    #Region "Extensibility Method Definitions"
-    Partial Private Sub OnLoaded()
-    End Sub
-    Partial Private Sub OnValidate(action As System.Data.Linq.ChangeAction)
-    End Sub
-    Partial Private Sub OnCreated()
-    End Sub
-    Partial Private Sub OnIDChanging(value As System.Guid)
-    End Sub
-    Partial Private Sub OnIDChanged()
-    End Sub
-    Partial Private Sub OntypeChanging(value As Byte)
-    End Sub
-    Partial Private Sub OntypeChanged()
-    End Sub
-    Partial Private Sub OnvalueChanging(value As String)
-    End Sub
-    Partial Private Sub OnvalueChanged()
-    End Sub
-    Partial Private Sub OnmetadataChanging(value As String)
-    End Sub
-    Partial Private Sub OnmetadataChanged()
-    End Sub
-    #End Region
-	
-	Public Sub New()
-		MyBase.New
-		OnCreated
-	End Sub
-	
-	<Global.System.Data.Linq.Mapping.ColumnAttribute(Storage:="_ID", DbType:="UniqueIdentifier NOT NULL", IsPrimaryKey:=true)>  _
-	Public Property ID() As System.Guid
+	Public ReadOnly Property NODEs() As System.Data.Linq.Table(Of NODE)
 		Get
-			Return Me._ID
+			Return Me.GetTable(Of NODE)
 		End Get
-		Set
-			If ((Me._ID = value)  _
-						= false) Then
-				Me.OnIDChanging(value)
-				Me.SendPropertyChanging
-				Me._ID = value
-				Me.SendPropertyChanged("ID")
-				Me.OnIDChanged
-			End If
-		End Set
 	End Property
-	
-	<Global.System.Data.Linq.Mapping.ColumnAttribute(Storage:="_type", DbType:="TinyInt NOT NULL")>  _
-	Public Property type() As Byte
-		Get
-			Return Me._type
-		End Get
-		Set
-			If ((Me._type = value)  _
-						= false) Then
-				Me.OntypeChanging(value)
-				Me.SendPropertyChanging
-				Me._type = value
-				Me.SendPropertyChanged("type")
-				Me.OntypeChanged
-			End If
-		End Set
-	End Property
-	
-	<Global.System.Data.Linq.Mapping.ColumnAttribute(Storage:="_value", DbType:="VarChar(MAX)")>  _
-	Public Property value() As String
-		Get
-			Return Me._value
-		End Get
-		Set
-			If (String.Equals(Me._value, value) = false) Then
-				Me.OnvalueChanging(value)
-				Me.SendPropertyChanging
-				Me._value = value
-				Me.SendPropertyChanged("value")
-				Me.OnvalueChanged
-			End If
-		End Set
-	End Property
-	
-	<Global.System.Data.Linq.Mapping.ColumnAttribute(Storage:="_metadata", DbType:="VarChar(MAX)")>  _
-	Public Property metadata() As String
-		Get
-			Return Me._metadata
-		End Get
-		Set
-			If (String.Equals(Me._metadata, value) = false) Then
-				Me.OnmetadataChanging(value)
-				Me.SendPropertyChanging
-				Me._metadata = value
-				Me.SendPropertyChanged("metadata")
-				Me.OnmetadataChanged
-			End If
-		End Set
-	End Property
-	
-	Public Event PropertyChanging As PropertyChangingEventHandler Implements System.ComponentModel.INotifyPropertyChanging.PropertyChanging
-	
-	Public Event PropertyChanged As PropertyChangedEventHandler Implements System.ComponentModel.INotifyPropertyChanged.PropertyChanged
-	
-	Protected Overridable Sub SendPropertyChanging()
-		If ((Me.PropertyChangingEvent Is Nothing)  _
-					= false) Then
-			RaiseEvent PropertyChanging(Me, emptyChangingEventArgs)
-		End If
-	End Sub
-	
-	Protected Overridable Sub SendPropertyChanged(ByVal propertyName As [String])
-		If ((Me.PropertyChangedEvent Is Nothing)  _
-					= false) Then
-			RaiseEvent PropertyChanged(Me, New PropertyChangedEventArgs(propertyName))
-		End If
-	End Sub
 End Class
 
 <Global.System.Data.Linq.Mapping.TableAttribute()>  _
@@ -343,6 +214,158 @@ Partial Public Class QUAD
 				Me._s25p5o1type = value
 				Me.SendPropertyChanged("s25p5o1type")
 				Me.Ons25p5o1typeChanged
+			End If
+		End Set
+	End Property
+	
+	Public Event PropertyChanging As PropertyChangingEventHandler Implements System.ComponentModel.INotifyPropertyChanging.PropertyChanging
+	
+	Public Event PropertyChanged As PropertyChangedEventHandler Implements System.ComponentModel.INotifyPropertyChanged.PropertyChanged
+	
+	Protected Overridable Sub SendPropertyChanging()
+		If ((Me.PropertyChangingEvent Is Nothing)  _
+					= false) Then
+			RaiseEvent PropertyChanging(Me, emptyChangingEventArgs)
+		End If
+	End Sub
+	
+	Protected Overridable Sub SendPropertyChanged(ByVal propertyName As [String])
+		If ((Me.PropertyChangedEvent Is Nothing)  _
+					= false) Then
+			RaiseEvent PropertyChanged(Me, New PropertyChangedEventArgs(propertyName))
+		End If
+	End Sub
+End Class
+
+<Global.System.Data.Linq.Mapping.TableAttribute()>  _
+Partial Public Class NODE
+	Implements System.ComponentModel.INotifyPropertyChanging, System.ComponentModel.INotifyPropertyChanged
+	
+	Private Shared emptyChangingEventArgs As PropertyChangingEventArgs = New PropertyChangingEventArgs(String.Empty)
+	
+	Private _ID As System.Guid
+	
+	Private _AlternateID As System.Guid
+	
+	Private _type As Byte
+	
+	Private _value As String
+	
+	Private _metadata As String
+	
+    #Region "Extensibility Method Definitions"
+    Partial Private Sub OnLoaded()
+    End Sub
+    Partial Private Sub OnValidate(action As System.Data.Linq.ChangeAction)
+    End Sub
+    Partial Private Sub OnCreated()
+    End Sub
+    Partial Private Sub OnIDChanging(value As System.Guid)
+    End Sub
+    Partial Private Sub OnIDChanged()
+    End Sub
+    Partial Private Sub OnAlternateIDChanging(value As System.Guid)
+    End Sub
+    Partial Private Sub OnAlternateIDChanged()
+    End Sub
+    Partial Private Sub OntypeChanging(value As Byte)
+    End Sub
+    Partial Private Sub OntypeChanged()
+    End Sub
+    Partial Private Sub OnvalueChanging(value As String)
+    End Sub
+    Partial Private Sub OnvalueChanged()
+    End Sub
+    Partial Private Sub OnmetadataChanging(value As String)
+    End Sub
+    Partial Private Sub OnmetadataChanged()
+    End Sub
+    #End Region
+	
+	Public Sub New()
+		MyBase.New
+		OnCreated
+	End Sub
+	
+	<Global.System.Data.Linq.Mapping.ColumnAttribute(Storage:="_ID", DbType:="UniqueIdentifier NOT NULL", IsPrimaryKey:=true)>  _
+	Public Property ID() As System.Guid
+		Get
+			Return Me._ID
+		End Get
+		Set
+			If ((Me._ID = value)  _
+						= false) Then
+				Me.OnIDChanging(value)
+				Me.SendPropertyChanging
+				Me._ID = value
+				Me.SendPropertyChanged("ID")
+				Me.OnIDChanged
+			End If
+		End Set
+	End Property
+	
+	<Global.System.Data.Linq.Mapping.ColumnAttribute(Storage:="_AlternateID", DbType:="UniqueIdentifier NOT NULL", IsPrimaryKey:=true)>  _
+	Public Property AlternateID() As System.Guid
+		Get
+			Return Me._AlternateID
+		End Get
+		Set
+			If ((Me._AlternateID = value)  _
+						= false) Then
+				Me.OnAlternateIDChanging(value)
+				Me.SendPropertyChanging
+				Me._AlternateID = value
+				Me.SendPropertyChanged("AlternateID")
+				Me.OnAlternateIDChanged
+			End If
+		End Set
+	End Property
+	
+	<Global.System.Data.Linq.Mapping.ColumnAttribute(Storage:="_type", DbType:="TinyInt NOT NULL")>  _
+	Public Property type() As Byte
+		Get
+			Return Me._type
+		End Get
+		Set
+			If ((Me._type = value)  _
+						= false) Then
+				Me.OntypeChanging(value)
+				Me.SendPropertyChanging
+				Me._type = value
+				Me.SendPropertyChanged("type")
+				Me.OntypeChanged
+			End If
+		End Set
+	End Property
+	
+	<Global.System.Data.Linq.Mapping.ColumnAttribute(Storage:="_value", DbType:="VarChar(MAX)")>  _
+	Public Property value() As String
+		Get
+			Return Me._value
+		End Get
+		Set
+			If (String.Equals(Me._value, value) = false) Then
+				Me.OnvalueChanging(value)
+				Me.SendPropertyChanging
+				Me._value = value
+				Me.SendPropertyChanged("value")
+				Me.OnvalueChanged
+			End If
+		End Set
+	End Property
+	
+	<Global.System.Data.Linq.Mapping.ColumnAttribute(Storage:="_metadata", DbType:="VarChar(MAX)")>  _
+	Public Property metadata() As String
+		Get
+			Return Me._metadata
+		End Get
+		Set
+			If (String.Equals(Me._metadata, value) = false) Then
+				Me.OnmetadataChanging(value)
+				Me.SendPropertyChanging
+				Me._metadata = value
+				Me.SendPropertyChanged("metadata")
+				Me.OnmetadataChanged
 			End If
 		End Set
 	End Property

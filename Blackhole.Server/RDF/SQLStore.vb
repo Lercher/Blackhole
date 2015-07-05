@@ -26,11 +26,13 @@ Public Class SQLStore
     'C# : IUpdateableStorage, IUpdateableGenericIOManager, IVirtualRdfProvider<int, int>, IConfigurationSerializable, IDisposable
 
     Private ReadOnly GuidGenerator As IGuidGenerator
+    Private ReadOnly AlternateGuidGenerator As IGuidGenerator
     Private Dataset As Query.Datasets.ISparqlDataset 'stores a context and needs to be disposed of
     Private ctx As BlackholeDBDataContext
 
     Public Sub New()
         GuidGenerator = New HashGuidGenerator With {.HashProvider = New CityHashFunction}
+        AlternateGuidGenerator = New AlternateHashGuidGenerator With {.HashProvider = New CityHashFunction}
         ctx = New BlackholeDBDataContext()
     End Sub
 
@@ -198,14 +200,12 @@ Public Class SQLStore
 
     Public Sub DeleteGraph(graphUri As Uri) Implements IStorageProvider.DeleteGraph
         Dim id = GetGraphID(graphUri)
-        Using c = ctx
-            Dim x = <x>
+        Dim x = <x>
 DELETE FROM quad WHERE graph = {0}
 DELETE FROM node WHERE id = {0} AND node.type  = 99
 DELETE FROM node WHERE node.type != 99 AND NOT EXISTS (SELECT * FROM quad WHERE quad.subject=node.id OR quad.predicate=node.id OR quad.object=node.id)
                     </x>
-            c.ExecuteCommand(x.Value, id)
-        End Using
+        ctx.ExecuteCommand(x.Value, id)
     End Sub
 
     Public Function ListGraphs() As IEnumerable(Of Uri) Implements IStorageProvider.ListGraphs
@@ -254,23 +254,40 @@ DELETE FROM node WHERE node.type != 99 AND NOT EXISTS (SELECT * FROM quad WHERE 
         End Get
     End Property
 
+    Friend Shared Sub DetectCollisions(ctx As BlackholeDBDataContext)
+        Dim qy = From n In ctx.NODEs Group By ID = n.ID Into alternates = Group, Count() Where Count > 1
+        If qy.Any Then
+            Dim list As New List(Of String)
+            For Each n In qy
+                list.Add(String.Format("'{0}' collides with:", n.ID))
+                For Each nn In n.alternates
+                    list.Add(String.Format("'{0}/{1}'", nn.value, nn.metadata))
+                Next
+            Next
+            Dim msg = "Hash collision detected, which is not supported by this store. Choose different values: " & Join(list.ToArray, " ")
+            Throw New RdfStorageException(msg)
+        End If
+    End Sub
+
     Public Sub SaveGraph(g As IGraph) Implements IStorageProvider.SaveGraph
         Dim gid = GetGraphID(g)
         Using tran = New TransactionScope
             DeleteGraph(g.BaseUri)
+
+            'we can have identical node values from graphs saved with different uris, so we load them.
+            Dim allnodes As New HashSet(Of Guid)
+            For Each node In From n In ctx.NODEs Where n.type <> 99 Select n.ID
+                allnodes.Add(node)
+            Next
             ' Note g.Nodes does not contain predicate nodes, see http://sourceforge.net/p/dotnetrdf/svn/2338/tree/Trunk/Libraries/core/Core/BaseGraph.cs#l152
-            Using c = ctx
-                Dim allnodes As New HashSet(Of Guid)
-                For Each node In From n In c.NODEs Where n.type <> 99 Select n.ID
-                    allnodes.Add(node)
-                Next
-                Dim nqy = From t In SPONodesDistinct(g) Select n = CreateDBNode(gid, t) Where Not allnodes.Contains(n.ID)
-                c.NODEs.InsertAllOnSubmit(nqy) ' Insert all node values
-                c.NODEs.InsertOnSubmit(New NODE With {.ID = gid, .type = 99, .value = If(g.BaseUri Is Nothing, Nothing, g.BaseUri.ToString)}) ' Insert graphuri as node
-                Dim qy = From t In g.Triples Select q = CreateDBQuad(gid, t.Subject, t.Predicate, t.Object)
-                c.QUADs.InsertAllOnSubmit(qy) ' insert all quads
-                c.SubmitChanges()
-            End Using
+            Dim nqy = From t In SPONodesDistinct(g) Select n = CreateDBNode(gid, t) Where Not allnodes.Contains(n.ID)
+            ctx.NODEs.InsertAllOnSubmit(nqy) ' Insert all node values
+            ctx.SubmitChanges()
+            DetectCollisions(ctx)
+            ctx.NODEs.InsertOnSubmit(New NODE With {.ID = gid, .type = 99, .value = If(g.BaseUri Is Nothing, Nothing, g.BaseUri.ToString)}) ' Insert graphuri as node
+            Dim qy = From t In g.Triples Select q = CreateDBQuad(gid, t.Subject, t.Predicate, t.Object)
+            ctx.QUADs.InsertAllOnSubmit(qy) ' insert all quads
+            ctx.SubmitChanges()
             tran.Complete()
         End Using
     End Sub
@@ -286,6 +303,7 @@ DELETE FROM node WHERE node.type != 99 AND NOT EXISTS (SELECT * FROM quad WHERE 
     Private Function CreateDBNode(gid As Guid, n As INode) As NODE
         Return New NODE With {
             .ID = GetID(n),
+            .AlternateID = AlternateGuidGenerator.fromNode(n),
             .type = CByte(n.NodeType),
             .value = BlackholeNodeFactory.DBValueOf(n),
             .metadata = BlackholeNodeFactory.DBMetaOf(n)
@@ -340,50 +358,50 @@ DELETE FROM node WHERE node.type != 99 AND NOT EXISTS (SELECT * FROM quad WHERE 
         If isEmpty(additions) AndAlso isEmpty(removals) Then Return
         Dim gid = GetGraphID(graphUri)
         Dim tempgid = Guid.NewGuid
-        Using c = ctx
-            If Not isEmpty(removals) Then
-                Dim rems = From r In removals
-                    Select q = CreateDBQuad(gid, r.Subject, r.Predicate, r.Object)
-                For Each q In rems
-                    Dim x = c.ExecuteCommand("DELETE quad WHERE graph={0} AND subject={1} AND predicate={2} AND object={3}", q.graph, q.subject, q.predicate, q.object)
-                    Debug.Assert(x = 1, "Exactly one quad should be deleted")
-                Next
-            End If
-            If Not isEmpty(additions) Then
-                ' with a temporary graph id any insert succedes
-                ' we delete all duplicates afterwards and re-id the inserts
-                Dim inserts =
-                    From add In additions
-                    Select CreateDBQuad(tempgid, add.Subject, add.Predicate, add.Object)
-                c.QUADs.InsertAllOnSubmit(inserts)
-            End If
-            c.SubmitChanges()
-            If Not isEmpty(additions) Then
-                ' delete duplicates and give the inserted ones the proper gid:
-                c.ExecuteCommand("DELETE i FROM quad i INNER JOIN quad q ON q.subject=i.subject AND q.predicate=i.predicate AND q.object=i.object WHERE q.graph={0} AND i.graph={1} ; UPDATE quad SET graph={0} WHERE graph={1}", gid, tempgid)
-                ' add nodes for quads that have no nodes
-                Dim missingsubjguids = From q In c.QUADs Select qid = q.subject Where Not (Aggregate n In c.NODEs Where n.ID = qid Into Any()) Select qid
-                Dim missingpredguids = From q In c.QUADs Select qid = q.predicate Where Not (Aggregate n In c.NODEs Where n.ID = qid Into Any()) Select qid
-                Dim missingobjguids = From q In c.QUADs Select qid = q.object Where Not (Aggregate n In c.NODEs Where n.ID = qid Into Any()) Select qid
-                Dim d As New Dictionary(Of System.Guid, INode)
-                For Each add In additions
-                    d(GetID(add.Subject)) = add.Subject
-                    d(GetID(add.Predicate)) = add.Predicate
-                    d(GetID(add.Object)) = add.Object
-                Next
-                Dim missingnodes =
-                    From m In missingsubjguids.Concat(missingpredguids).Concat(missingobjguids)
-                    Distinct
-                    Let node = d(m)
-                    Select CreateDBNode(gid, node)
-                c.NODEs.InsertAllOnSubmit(missingnodes)
-                c.SubmitChanges()
-            End If
-            If Not isEmpty(removals) Then
-                ' delete all nodes without quads that reference them
-                c.ExecuteCommand("DELETE FROM node WHERE node.type != 99 AND NOT EXISTS (SELECT * FROM quad WHERE quad.subject=node.id OR quad.predicate=node.id OR quad.object=node.id)")
-            End If
-        End Using
+        If Not isEmpty(removals) Then
+            Dim rems = From r In removals
+                Select q = CreateDBQuad(gid, r.Subject, r.Predicate, r.Object)
+            For Each q In rems
+                Dim x = ctx.ExecuteCommand("DELETE quad WHERE graph={0} AND subject={1} AND predicate={2} AND object={3}", q.graph, q.subject, q.predicate, q.object)
+                Debug.Assert(x = 1, "Exactly one quad should be deleted")
+            Next
+        End If
+        If Not isEmpty(additions) Then
+            ' with a temporary graph id any insert succedes
+            ' we delete all duplicates afterwards and re-id the inserts
+            Dim inserts =
+                From add In additions
+                Select CreateDBQuad(tempgid, add.Subject, add.Predicate, add.Object)
+            ctx.QUADs.InsertAllOnSubmit(inserts) 'if it bombs, then there are hash collisions in quads which is not very probable, if it is a good hash function
+        End If
+        ctx.SubmitChanges()
+        If Not isEmpty(additions) Then
+            ' delete duplicates and give the inserted ones the proper gid:
+            ctx.ExecuteCommand("DELETE i FROM quad i INNER JOIN quad q ON q.subject=i.subject AND q.predicate=i.predicate AND q.object=i.object WHERE q.graph={0} AND i.graph={1}", gid, tempgid)
+            ' add nodes for quads that have no nodes
+            Dim missingsubjguids = From q In ctx.QUADs Where q.graph = tempgid Select qid = q.subject Where Not (Aggregate n In ctx.NODEs Where n.ID = qid Into Any()) Select qid
+            Dim missingpredguids = From q In ctx.QUADs Where q.graph = tempgid Select qid = q.predicate Where Not (Aggregate n In ctx.NODEs Where n.ID = qid Into Any()) Select qid
+            Dim missingobjguids = From q In ctx.QUADs Where q.graph = tempgid Select qid = q.object Where Not (Aggregate n In ctx.NODEs Where n.ID = qid Into Any()) Select qid
+            Dim d As New Dictionary(Of System.Guid, INode)
+            For Each add In additions
+                d(GetID(add.Subject)) = add.Subject
+                d(GetID(add.Predicate)) = add.Predicate
+                d(GetID(add.Object)) = add.Object
+            Next
+            Dim missingnodes =
+                From m In missingsubjguids.Concat(missingpredguids).Concat(missingobjguids)
+                Distinct
+                Let node = d(m)
+                Select CreateDBNode(gid, node)
+            ctx.NODEs.InsertAllOnSubmit(missingnodes)
+            ctx.SubmitChanges()
+            DetectCollisions(ctx)
+            ctx.ExecuteCommand("UPDATE quad SET graph={0} WHERE graph={1}", gid, tempgid)
+        End If
+        If Not isEmpty(removals) Then
+            ' delete all nodes without quads that reference them
+            ctx.ExecuteCommand("DELETE FROM node WHERE node.type != 99 AND NOT EXISTS (SELECT * FROM quad WHERE quad.subject=node.id OR quad.predicate=node.id OR quad.object=node.id)")
+        End If
     End Sub
 
 

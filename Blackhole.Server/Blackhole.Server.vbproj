@@ -122,6 +122,7 @@
     <Compile Include="Controllers\BlackholeBaseController.vb" />
     <Compile Include="Controllers\QueryController.vb" />
     <Compile Include="Formatters\SparqlResultsetFormatter.vb" />
+    <Compile Include="Hashes\AlternateHashGuidGenerator.vb" />
     <Compile Include="Linq2SQL\BlackholeDB.designer.vb">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
