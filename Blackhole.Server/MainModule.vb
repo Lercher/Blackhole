@@ -1,10 +1,12 @@
 ﻿Imports Topshelf
 ' http://topshelf.readthedocs.org/en/latest/overview/commandline.html
 
+#Const TRYME = False
+
 Module MainModule
 
     Sub Main()
-#If DEBUG Then
+#If TRYME Then
         Tryme.All()
         Console.ReadLine()
         Return
