@@ -34,12 +34,20 @@ Public Class BlackholeService
 
     Private Sub ConfigureRoutesAndHandlers(config As System.Web.Http.HttpConfiguration)
         config.Routes.MapHttpRoute(
+            "Blackhole with Extension",
+            "{controller}.{ext}",
+            New With {.controller = "Home", .ext = "json"}
+        )
+
+        config.Routes.MapHttpRoute(
             "Blackhole",
             "{controller}",
-            New With {.controller = "Home"}
+            New With {.controller = "Home", .ext = "json"}
         )
 
         config.IncludeErrorDetailPolicy = IncludeErrorDetailPolicy.Always 'TODO: Should be configurable
+
+        config.Formatters.Add(New SparqlResultsetFormatter)
     End Sub
 
 #Region "IDisposable Support"
