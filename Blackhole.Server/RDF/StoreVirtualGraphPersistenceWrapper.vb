@@ -1,6 +1,7 @@
 Imports VDS.RDF
 Imports VDS.RDF.Storage.Virtualisation
 
+#If False Then
 
 Public MustInherit Class StoreVirtualGraphPersistenceWrapper(Of TNodeID, TGraphID)
     Inherits StoreGraphPersistenceWrapper
@@ -38,3 +39,5 @@ Public MustInherit Class StoreVirtualGraphPersistenceWrapper(Of TNodeID, TGraphI
         Return CreateVirtual(provider, n)
     End Function
 End Class
+
+#End If
