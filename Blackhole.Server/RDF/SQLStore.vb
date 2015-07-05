@@ -9,6 +9,8 @@ Imports VDS.RDF.Storage
 Imports VDS.RDF.Storage.Virtualisation
 Imports VDS.RDF.Update
 
+#Const DONTNETRDF_SUPPORTS_UPDATING_VIRTUALIZEDGRAPHS = True
+
 ' see http://sourceforge.net/p/dotnetrdf/svn/2338/tree/Trunk/Libraries/data.sql/BaseAdoStoreManager.cs
 ' and http://sourceforge.net/p/dotnetrdf/svn/2338/tree/Trunk/Libraries/data.sql/Schemas/CreateMicrosoftAdoHashStore.sql
 
