@@ -35,13 +35,13 @@ Public Class BlackholeService
     Private Sub ConfigureRoutesAndHandlers(config As System.Web.Http.HttpConfiguration)
         config.Routes.MapHttpRoute(
             "Blackhole with Extension",
-            "{controller}.{ext}",
+            "{store}/{controller}.{ext}",
             New With {.controller = "Home", .ext = "json"}
         )
 
         config.Routes.MapHttpRoute(
             "Blackhole",
-            "{controller}",
+            "{store}/{controller}",
             New With {.controller = "Home", .ext = "json"}
         )
 
