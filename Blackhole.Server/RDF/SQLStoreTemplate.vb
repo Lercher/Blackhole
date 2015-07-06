@@ -1,4 +1,5 @@
 Imports VDS.RDF.Storage.Management.Provisioning
+Imports VDS.RDF.Storage
 
 
 Public Class SQLStoreTemplate
@@ -9,7 +10,6 @@ Public Class SQLStoreTemplate
     End Sub
 
     Public Overrides Iterator Function Validate() As IEnumerable(Of String)
-
         If String.IsNullOrWhiteSpace(ID) Then
             Yield "The store name (ID) cannot be empty"
             Return
@@ -18,4 +18,13 @@ Public Class SQLStoreTemplate
         Dim re = New System.Text.RegularExpressions.Regex("^[a-z][a-z0-9_]*$", Text.RegularExpressions.RegexOptions.IgnoreCase)
         If Not re.IsMatch(ID) Then Yield "The store name (ID) can only consist of the letters a-z, digits and '_' and must start with a letter."
     End Function
+
+    Public Sub ValidateAndThrow()
+        Dim val = Validate()
+        If val.Any Then
+            Dim msg = String.Format("Invalid store template '{0}': {1}", Me.ID, Join(val.ToArray, " | "))
+            Throw New RdfStorageException(msg)
+        End If
+    End Sub
+
 End Class

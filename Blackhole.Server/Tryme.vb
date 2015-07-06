@@ -10,13 +10,14 @@ Public Class Tryme
     Public Shared Sub All()
         Console.WriteLine("-----------------------------------------------------------------")
         Using sm = New SQLStoreManagement
+            storename = "standard"
+            sm.CreateStore(sm.GetDefaultTemplate(storename))
             sm.CreateStore(sm.GetDefaultTemplate("sample"))
             sm.CreateStore(sm.GetDefaultTemplate("sample2"))
             sm.CreateStore(sm.GetDefaultTemplate("sample3"))
             For Each st In sm.ListStores
                 Console.WriteLine("known store: " & st)
             Next
-            storename = "sample"
         End Using
         Console.WriteLine("-----------------------------------------------------------------")
         SaveGraph()
@@ -38,18 +39,18 @@ Public Class Tryme
         InsertData()
         Console.WriteLine("-----------------------------------------------------------------")
         Using sm = New SQLStoreManagement
-            For Each st In sm.ListStores
+            For Each st In From s In sm.ListStores Where s Like "*sample*"
                 sm.DeleteStore(st)
             Next
         End Using
     End Sub
 
     Private Shared Sub DeleteData()
-        Using st = New SQLStore
+        Using st = CreateSQLStore()
             st.Update("DELETE DATA { <http://example.org> <http://example.org/says> ""Another one hits the dust."" };")
             'st.Update("DELETE { <http://example.org> <http://example.org/says> ""Another one hits the dust."" } where { <http://example.org> <http://example.org/says> ""Another one hits the dust."" };")
         End Using
-        Using st = New SQLStore
+        Using st = CreateSQLStore()
             Dim g As IGraph = New Graph()
             st.LoadGraph(g, "")
             Print(g)
@@ -57,10 +58,10 @@ Public Class Tryme
     End Sub
 
     Private Shared Sub InsertData()
-        Using st = New SQLStore
+        Using st = CreateSQLStore()
             st.Update("INSERT DATA {<http://example.org> <http://example.org/says> ""Another one hits the dust.""; <http://example.org/says> ""Another one hits the dust again""; <http://example.org/says> ""Another one hits the dust for the third time"".}")
         End Using
-        Using st = New SQLStore
+        Using st = CreateSQLStore()
             Dim g As IGraph = New Graph()
             st.LoadGraph(g, "")
             Print(g)

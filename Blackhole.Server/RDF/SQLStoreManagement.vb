@@ -20,7 +20,7 @@ Public Class SQLStoreManagement
     End Sub
 
     Private Function CreateStore(storeID As String) As Boolean
-        If StoreExists(storeID) Then Throw New RdfStorageException(String.Format("Store '{0}' exists already", storeID))
+        If StoreExists(storeID) Then Return True 'Throw New RdfStorageException(String.Format("Store '{0}' exists already", storeID))
         ctx.ExecuteCommand(String.Format("CREATE SCHEMA [bh_{0}] AUTHORIZATION [dbo]", storeID))
         Dim createNODE =
             <x>
@@ -76,10 +76,9 @@ Public Class SQLStoreManagement
     End Function
 
     Public Function CreateStore(template As Provisioning.IStoreTemplate) As Boolean Implements IStorageServer.CreateStore
-        Dim val = template.Validate
-        If val.Any Then
-            Throw New RdfStorageException("Invalid template: " & Join(val.ToArray, " | "))
-        End If
+        Dim t = TryCast(template, SQLStoreTemplate)
+        If t Is Nothing Then Throw New RdfStorageException("Invalid template. It must not be null and one of my available templates.")
+        t.ValidateAndThrow()
         Return CreateStore(template.ID)
     End Function
 
@@ -92,7 +91,7 @@ Public Class SQLStoreManagement
     End Function
 
     Public Function ListStores() As IEnumerable(Of String) Implements IStorageServer.ListStores
-        Return From s In ctx.schemas Where s.name Like "bh_*" Select s.name.Substring(3)
+        Return From s In ctx.schemas Where s.name Like "bh_*" Order By s.name Select s.name.Substring(3)
     End Function
 
     Public Function GetStore(storeID As String) As IStorageProvider Implements IStorageServer.GetStore

@@ -31,14 +31,13 @@ Public Class SQLStore
     Private ctx As BlackholeDBDataContext
     Private schema As String
 
-    Public Sub New(Optional ByVal storeID As String = Nothing)
+    Public Sub New(ByVal storeID As String)
+        With New SQLStoreTemplate(storeID)
+            .ValidateAndThrow()
+        End With
         GuidGenerator = New HashGuidGenerator With {.HashProvider = New CityHashFunction}
         AlternateGuidGenerator = New AlternateHashGuidGenerator With {.HashProvider = New CityHashFunction}
-        If String.IsNullOrWhiteSpace(storeID) Then
-            schema = "dbo"
-        Else
-            schema = String.Format("[bh_{0}]", storeID)
-        End If
+        schema = String.Format("[bh_{0}]", storeID)
         Dim cs = My.Settings.BlackholeConnectionString
         ctx = New BlackholeDBDataContext(cs, BlackholeDBMappingSource.CreateMappingSourceFor(schema))
 #If False Then
@@ -215,10 +214,12 @@ Public Class SQLStore
     Public Sub DeleteGraph(graphUri As Uri) Implements IStorageProvider.DeleteGraph
         Dim id = GetGraphID(graphUri)
         Dim x = <x>
-DELETE FROM quad WHERE graph = {0}
-DELETE FROM node WHERE id = {0} AND node.type  = 99
-DELETE FROM node WHERE node.type != 99 AND NOT EXISTS (SELECT * FROM quad WHERE quad.subject=node.id OR quad.predicate=node.id OR quad.object=node.id)
-                    </x>
+DELETE FROM <%= schema %>.quad WHERE graph = {0}
+DELETE FROM <%= schema %>.node WHERE id = {0} AND node.type  = 99
+DELETE FROM <%= schema %>.node WHERE node.type != 99 
+  AND NOT EXISTS (SELECT * FROM <%= schema %>.quad 
+     WHERE quad.subject=node.id OR quad.predicate=node.id OR quad.object=node.id
+  )</x>
         ctx.ExecuteCommand(x.Value, id)
     End Sub
 
@@ -285,12 +286,13 @@ DELETE FROM node WHERE node.type != 99 AND NOT EXISTS (SELECT * FROM quad WHERE 
 
     Public Sub SaveGraph(g As IGraph) Implements IStorageProvider.SaveGraph
         Dim gid = GetGraphID(g)
+        Dim alternategid = AlternateGuidGenerator.fromGraphUri(g.BaseUri)
         Using tran = New TransactionScope
             DeleteGraph(g.BaseUri)
 
             'we can have identical node values from graphs saved with different uris, so we load them.
             Dim allnodes As New HashSet(Of Guid)
-            For Each node In From n In ctx.NODEs Where n.type <> 99 Select n.ID
+            For Each node In From n In ctx.NODEs Select n.ID
                 allnodes.Add(node)
             Next
             ' Note g.Nodes does not contain predicate nodes, see http://sourceforge.net/p/dotnetrdf/svn/2338/tree/Trunk/Libraries/core/Core/BaseGraph.cs#l152
@@ -298,7 +300,10 @@ DELETE FROM node WHERE node.type != 99 AND NOT EXISTS (SELECT * FROM quad WHERE 
             ctx.NODEs.InsertAllOnSubmit(nqy) ' Insert all node values
             ctx.SubmitChanges()
             DetectCollisions(ctx)
-            ctx.NODEs.InsertOnSubmit(New NODE With {.ID = gid, .type = 99, .value = If(g.BaseUri Is Nothing, Nothing, g.BaseUri.ToString)}) ' Insert graphuri as node
+            If Not allnodes.Contains(gid) Then
+                ' save the Graph ID as a 99-node
+                ctx.NODEs.InsertOnSubmit(New NODE With {.ID = gid, .AlternateID = alternategid, .type = 99, .value = If(g.BaseUri Is Nothing, Nothing, g.BaseUri.ToString)}) ' Insert graphuri as node
+            End If
             Dim qy = From t In g.Triples Select q = CreateDBQuad(gid, t.Subject, t.Predicate, t.Object)
             ctx.QUADs.InsertAllOnSubmit(qy) ' insert all quads
             ctx.SubmitChanges()
@@ -376,7 +381,7 @@ DELETE FROM node WHERE node.type != 99 AND NOT EXISTS (SELECT * FROM quad WHERE 
             Dim rems = From r In removals
                 Select q = CreateDBQuad(gid, r.Subject, r.Predicate, r.Object)
             For Each q In rems
-                Dim x = ctx.ExecuteCommand("DELETE quad WHERE graph={0} AND subject={1} AND predicate={2} AND object={3}", q.graph, q.subject, q.predicate, q.object)
+                Dim x = ctx.ExecuteCommand(String.Concat("DELETE ", schema, ".quad WHERE graph={0} AND subject={1} AND predicate={2} AND object={3}"), q.graph, q.subject, q.predicate, q.object)
                 Debug.Assert(x = 1, "Exactly one quad should be deleted")
             Next
         End If
@@ -391,7 +396,7 @@ DELETE FROM node WHERE node.type != 99 AND NOT EXISTS (SELECT * FROM quad WHERE 
         ctx.SubmitChanges()
         If Not isEmpty(additions) Then
             ' delete duplicates and give the inserted ones the proper gid:
-            ctx.ExecuteCommand("DELETE i FROM quad i INNER JOIN quad q ON q.subject=i.subject AND q.predicate=i.predicate AND q.object=i.object WHERE q.graph={0} AND i.graph={1}", gid, tempgid)
+            ctx.ExecuteCommand(String.Concat("DELETE i FROM ", schema, ".quad i INNER JOIN ", schema, ".quad q ON q.subject=i.subject AND q.predicate=i.predicate AND q.object=i.object WHERE q.graph={0} AND i.graph={1}"), gid, tempgid)
             ' add nodes for quads that have no nodes
             Dim missingsubjguids = From q In ctx.QUADs Where q.graph = tempgid Select qid = q.subject Where Not (Aggregate n In ctx.NODEs Where n.ID = qid Into Any()) Select qid
             Dim missingpredguids = From q In ctx.QUADs Where q.graph = tempgid Select qid = q.predicate Where Not (Aggregate n In ctx.NODEs Where n.ID = qid Into Any()) Select qid
@@ -410,11 +415,11 @@ DELETE FROM node WHERE node.type != 99 AND NOT EXISTS (SELECT * FROM quad WHERE 
             ctx.NODEs.InsertAllOnSubmit(missingnodes)
             ctx.SubmitChanges()
             DetectCollisions(ctx)
-            ctx.ExecuteCommand("UPDATE quad SET graph={0} WHERE graph={1}", gid, tempgid)
+            ctx.ExecuteCommand(String.Concat("UPDATE ", schema, ".quad SET graph={0} WHERE graph={1}"), gid, tempgid)
         End If
         If Not isEmpty(removals) Then
             ' delete all nodes without quads that reference them
-            ctx.ExecuteCommand("DELETE FROM node WHERE node.type != 99 AND NOT EXISTS (SELECT * FROM quad WHERE quad.subject=node.id OR quad.predicate=node.id OR quad.object=node.id)")
+            ctx.ExecuteCommand(String.Concat("DELETE FROM ", schema, ".node WHERE node.type != 99 AND NOT EXISTS (SELECT * FROM ", schema, ".quad WHERE quad.subject=node.id OR quad.predicate=node.id OR quad.object=node.id)"))
         End If
     End Sub
 
