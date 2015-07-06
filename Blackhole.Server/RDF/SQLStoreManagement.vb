@@ -71,7 +71,7 @@ Public Class SQLStoreManagement
         Throw New RdfStorageException("Unknown store " & storeID)
     End Sub
 
-    Private Function StoreExists(ByVal storeID As String) As Boolean
+    Public Function StoreExists(ByVal storeID As String) As Boolean
         Return ListStores.Where(Function(s) 0 = StringComparer.InvariantCultureIgnoreCase.Compare(s, storeID)).Any
     End Function
 
