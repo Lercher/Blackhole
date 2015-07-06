@@ -12,7 +12,7 @@ Public Class BlackholeService
         Dim cn = System.Net.Dns.GetHostEntry("localhost").HostName
         Dim config = New HttpSelfHostConfiguration(String.Format("http://{0}:8090/blackhole", cn))
 
-        ConfigureRoutesAndHandlers(config)
+        BlackholeBaseController.ConfigureRoutesAndHandlers(config)
 
         server = New HttpSelfHostServer(config)
         Try
@@ -31,24 +31,6 @@ Public Class BlackholeService
     End Function
 
 
-
-    Private Sub ConfigureRoutesAndHandlers(config As System.Web.Http.HttpConfiguration)
-        config.Routes.MapHttpRoute(
-            "Blackhole with Extension",
-            "{store}/{controller}.{ext}",
-            New With {.controller = "Home", .ext = "json"}
-        )
-
-        config.Routes.MapHttpRoute(
-            "Blackhole",
-            "{store}/{controller}",
-            New With {.controller = "Home", .ext = "json"}
-        )
-
-        config.IncludeErrorDetailPolicy = IncludeErrorDetailPolicy.Always 'TODO: Should be configurable
-
-        config.Formatters.Add(New SparqlResultsetFormatter)
-    End Sub
 
 #Region "IDisposable Support"
     Private disposedValue As Boolean ' To detect redundant calls

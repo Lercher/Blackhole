@@ -1,7 +1,7 @@
 ﻿Imports Topshelf
 ' http://topshelf.readthedocs.org/en/latest/overview/commandline.html
 
-#Const TRYME = True
+#Const TRYME = False
 
 Module MainModule
 

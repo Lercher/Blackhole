@@ -121,6 +121,8 @@
   <ItemGroup>
     <Compile Include="Controllers\BlackholeBaseController.vb" />
     <Compile Include="Controllers\QueryController.vb" />
+    <Compile Include="Controllers\SelectSyntaxController.vb" />
+    <Compile Include="Controllers\SyntaxCheckResult.vb" />
     <Compile Include="Formatters\SparqlResultsetFormatter.vb" />
     <Compile Include="Hashes\AlternateHashGuidGenerator.vb" />
     <Compile Include="Linq2SQL\BlackholeDB.designer.vb">
