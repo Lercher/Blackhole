@@ -9,8 +9,8 @@ Public Class HashGuidGenerator
     End Sub
 
     Public Function fromGraphUri(uri As Uri) As Guid Implements IGuidGenerator.fromGraphUri
-        If uri Is Nothing Then Return Guid.Empty
-        Dim b = enc.GetBytes(uri.ToString())
+        Dim s = If(uri Is Nothing, String.Empty, uri.ToString())
+        Dim b = enc.GetBytes(s)
         Mangle(b)
         Return HashProvider.Hash(b, 99)
     End Function
