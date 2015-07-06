@@ -6,10 +6,10 @@ Imports VDS.RDF.Storage.Virtualisation
 Public MustInherit Class StoreVirtualGraphPersistenceWrapper(Of TNodeID, TGraphID)
     Inherits StoreGraphPersistenceWrapper
 
-    Protected MustOverride Function CreateVirtual(provider As IVirtualRdfProvider(Of Guid, Guid), preMaterializedValue As INode) As INode
+    Protected MustOverride Function CreateVirtual(provider As IVirtualRdfProvider(Of TNodeID, TGraphID), preMaterializedValue As INode) As INode
 
-    Protected provider As IVirtualRdfProvider(Of Guid, Guid)
-    Public Sub New(manager As VDS.RDF.Storage.IStorageProvider, provider As IVirtualRdfProvider(Of Guid, Guid), g As VDS.RDF.IGraph, graphUri As System.Uri, [writeOnly] As Boolean)
+    Protected provider As IVirtualRdfProvider(Of TNodeID, TGraphID)
+    Public Sub New(manager As VDS.RDF.Storage.IStorageProvider, provider As IVirtualRdfProvider(Of TNodeID, TGraphID), g As VDS.RDF.IGraph, graphUri As System.Uri, [writeOnly] As Boolean)
         MyBase.New(manager, g, graphUri, [writeOnly])
         Me.provider = provider
     End Sub
