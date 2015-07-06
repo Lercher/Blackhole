@@ -81,9 +81,15 @@ Partial Public Class BlackholeDBDataContext
 			Return Me.GetTable(Of NODE)
 		End Get
 	End Property
+	
+	Public ReadOnly Property schemas() As System.Data.Linq.Table(Of schema)
+		Get
+			Return Me.GetTable(Of schema)
+		End Get
+	End Property
 End Class
 
-<Global.System.Data.Linq.Mapping.TableAttribute()>  _
+<Global.System.Data.Linq.Mapping.TableAttribute(Name:="dbo.QUAD")>  _
 Partial Public Class QUAD
 	Implements System.ComponentModel.INotifyPropertyChanging, System.ComponentModel.INotifyPropertyChanged
 	
@@ -237,7 +243,7 @@ Partial Public Class QUAD
 	End Sub
 End Class
 
-<Global.System.Data.Linq.Mapping.TableAttribute()>  _
+<Global.System.Data.Linq.Mapping.TableAttribute(Name:="dbo.NODE")>  _
 Partial Public Class NODE
 	Implements System.ComponentModel.INotifyPropertyChanging, System.ComponentModel.INotifyPropertyChanged
 	
@@ -387,4 +393,55 @@ Partial Public Class NODE
 			RaiseEvent PropertyChanged(Me, New PropertyChangedEventArgs(propertyName))
 		End If
 	End Sub
+End Class
+
+<Global.System.Data.Linq.Mapping.TableAttribute(Name:="sys.schemas")>  _
+Partial Public Class schema
+	
+	Private _name As String
+	
+	Private _schema_id As Integer
+	
+	Private _principal_id As System.Nullable(Of Integer)
+	
+	Public Sub New()
+		MyBase.New
+	End Sub
+	
+	<Global.System.Data.Linq.Mapping.ColumnAttribute(Storage:="_name", DbType:="NVarChar(128) NOT NULL", CanBeNull:=false)>  _
+	Public Property name() As String
+		Get
+			Return Me._name
+		End Get
+		Set
+			If (String.Equals(Me._name, value) = false) Then
+				Me._name = value
+			End If
+		End Set
+	End Property
+	
+	<Global.System.Data.Linq.Mapping.ColumnAttribute(Storage:="_schema_id", DbType:="Int NOT NULL")>  _
+	Public Property schema_id() As Integer
+		Get
+			Return Me._schema_id
+		End Get
+		Set
+			If ((Me._schema_id = value)  _
+						= false) Then
+				Me._schema_id = value
+			End If
+		End Set
+	End Property
+	
+	<Global.System.Data.Linq.Mapping.ColumnAttribute(Storage:="_principal_id", DbType:="Int")>  _
+	Public Property principal_id() As System.Nullable(Of Integer)
+		Get
+			Return Me._principal_id
+		End Get
+		Set
+			If (Me._principal_id.Equals(value) = false) Then
+				Me._principal_id = value
+			End If
+		End Set
+	End Property
 End Class

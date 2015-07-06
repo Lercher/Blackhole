@@ -14,5 +14,11 @@
         <elementListCompartment Id="81db1af6-ea47-428a-8024-885e5b93e891" absoluteBounds="3.0149999999999997, 0.96, 1.9700000000000002, 1.2108968098958333" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
       </nestedChildShapes>
     </classShape>
+    <classShape Id="5b4d468a-2585-408d-9448-b2100f4fb947" absoluteBounds="5.5, 0.5, 2, 1.3862939453125">
+      <DataClassMoniker Name="/BlackholeDBDataContext/schema" />
+      <nestedChildShapes>
+        <elementListCompartment Id="523d3cc4-cb42-4c64-8f98-07eba4fa1bf5" absoluteBounds="5.515, 0.96, 1.9700000000000002, 0.8262939453125" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
   </nestedChildShapes>
 </ordesignerObjectsDiagram>

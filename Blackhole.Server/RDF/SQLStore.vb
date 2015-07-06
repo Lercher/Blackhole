@@ -29,13 +29,27 @@ Public Class SQLStore
     Private ReadOnly AlternateGuidGenerator As IGuidGenerator
     Private Dataset As Query.Datasets.ISparqlDataset 'stores a context and needs to be disposed of
     Private ctx As BlackholeDBDataContext
+    Private schema As String
 
-    Public Sub New()
+    Public Sub New(Optional ByVal storeID As String = Nothing)
         GuidGenerator = New HashGuidGenerator With {.HashProvider = New CityHashFunction}
         AlternateGuidGenerator = New AlternateHashGuidGenerator With {.HashProvider = New CityHashFunction}
-        ctx = New BlackholeDBDataContext()
+        If String.IsNullOrWhiteSpace(storeID) Then
+            schema = "dbo"
+        Else
+            schema = String.Format("[bh_{0}]", storeID)
+        End If
+        Dim cs = My.Settings.BlackholeConnectionString
+        ctx = New BlackholeDBDataContext(cs, BlackholeDBMappingSource.CreateMappingSourceFor(schema))
+#If False Then
+        For Each n In ctx.NODEs
+            Console.WriteLine("{0} {1} {2} {3} {4}", n.ID, n.AlternateID, n.type, n.value, n.metadata)
+        Next
+        For Each q In ctx.QUADs
+            Console.WriteLine("{0} {1} {2} {3} {4}", q.graph, q.subject, q.predicate, q.object, q.s25p5o1type)
+        Next
+#End If
     End Sub
-
 
     ' ----------------------------------------------  IVirtualRdfProvider(Of Guid, Guid) -----------------------------------------------------------
 
@@ -164,7 +178,7 @@ Public Class SQLStore
 
     Public ReadOnly Property IOBehaviour As IOBehaviour Implements IStorageCapabilities.IOBehaviour
         Get
-            Return IOBehaviour.GraphStore Or IOBehaviour.CanUpdateTriples
+            Return IOBehaviour.GraphStore Or IOBehaviour.CanUpdateTriples Or Storage.IOBehaviour.CanCreateStores Or Storage.IOBehaviour.CanDeleteStores
         End Get
     End Property
 

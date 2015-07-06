@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Database Name="Blackhole" xmlns="http://schemas.microsoft.com/linqtosql/mapping/2007">
+  <Table Name="dbo.NODE" Member="NODE">
+    <Type Name="NODE">
+      <Column Name="ID" Type="System.Guid" DbType="UniqueIdentifier NOT NULL" IsPrimaryKey="true" CanBeNull="false"/>
+      <Column Name="AlternateID" Type="System.Guid" DbType="UniqueIdentifier NOT NULL" IsPrimaryKey="true" CanBeNull="false"/>
+      <Column Name="type" Member="Type" Type="System.Byte" DbType="TinyInt NOT NULL" CanBeNull="false"/>
+      <Column Name="value" Member="Value" Type="System.String" DbType="VarChar(MAX)" CanBeNull="true" UpdateCheck="Never"/>
+      <Column Name="metadata" Member="Metadata" Type="System.String" DbType="VarChar(MAX)" CanBeNull="true" UpdateCheck="Never"/>
+    </Type>
+  </Table>
+  <Table Name="dbo.QUAD" Member="QUAD">
+    <Type Name="QUAD">
+      <Column Name="subject" Member="Subject" Type="System.Guid" DbType="UniqueIdentifier NOT NULL" IsPrimaryKey="true" CanBeNull="false"/>
+      <Column Name="predicate" Member="Predicate" Type="System.Guid" DbType="UniqueIdentifier NOT NULL" IsPrimaryKey="true" CanBeNull="false"/>
+      <Column Name="object" Member="Object" Type="System.Guid" DbType="UniqueIdentifier NOT NULL" IsPrimaryKey="true" CanBeNull="false"/>
+      <Column Name="graph" Member="Graph" Type="System.Guid" DbType="UniqueIdentifier NOT NULL" IsPrimaryKey="true" CanBeNull="false"/>
+      <Column Name="s25p5o1type" Member="S25p5o1type" Type="System.Byte" DbType="TinyInt NOT NULL" CanBeNull="false"/>
+    </Type>
+  </Table>
+</Database>

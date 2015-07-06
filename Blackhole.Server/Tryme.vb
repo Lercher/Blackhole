@@ -4,7 +4,20 @@ Imports VDS.RDF.Parsing
 Imports VDS.RDF.Query.Datasets
 
 Public Class Tryme
+
+    Shared storename As String = "dbo"
+
     Public Shared Sub All()
+        Console.WriteLine("-----------------------------------------------------------------")
+        Using sm = New SQLStoreManagement
+            sm.CreateStore(sm.GetDefaultTemplate("sample"))
+            sm.CreateStore(sm.GetDefaultTemplate("sample2"))
+            sm.CreateStore(sm.GetDefaultTemplate("sample3"))
+            For Each st In sm.ListStores
+                Console.WriteLine("known store: " & st)
+            Next
+            storename = "sample"
+        End Using
         Console.WriteLine("-----------------------------------------------------------------")
         SaveGraph()
         Console.WriteLine("-----------------------------------------------------------------")
@@ -24,6 +37,11 @@ Public Class Tryme
         Console.WriteLine("-----------------------------------------------------------------")
         InsertData()
         Console.WriteLine("-----------------------------------------------------------------")
+        Using sm = New SQLStoreManagement
+            For Each st In sm.ListStores
+                sm.DeleteStore(st)
+            Next
+        End Using
     End Sub
 
     Private Shared Sub DeleteData()
@@ -52,7 +70,7 @@ Public Class Tryme
 
     Private Shared Sub LoadAndQuery()
         Dim g As IGraph = New Graph()
-        Using st = New SQLStore()
+        Using st = CreateSQLStore()
             st.LoadGraph(g, "http://example.org/graph#Big100")
             'st.LoadGraph(g, "")
             'Print(g)
@@ -73,7 +91,7 @@ Public Class Tryme
     End Sub
 
     Private Shared Sub Query()
-        Using st = New SQLStore()
+        Using st = CreateSQLStore()
             'Dim sp = "select $s $p $o where { $s $p $o }"
             'Dim sp = "select $s $p $o where { $s $p ""Hello World"". }"
             'Dim sp = "select $s $p $o where { $s <http://example.org/says> $o}"
@@ -133,7 +151,7 @@ Public Class Tryme
         Dim g As IGraph = CreateBigGraph(n)
         Print(g)
 
-        Using st = New SQLStore()
+        Using st = CreateSQLStore()
             st.SaveGraph(g)
         End Using
     End Sub
@@ -154,14 +172,14 @@ Public Class Tryme
         g.Assert(New Triple(bonjourMonde, bonjourMonde, bonjourMonde))
         Print(g)
 
-        Using st = New SQLStore()
+        Using st = CreateSQLStore()
             st.SaveGraph(g)
         End Using
     End Sub
 
 
     Private Shared Sub LoadGraph()
-        Using st = New SQLStore()
+        Using st = CreateSQLStore()
             Dim g As IGraph = New Graph()
             st.LoadGraph(g, "")
             Print(g)
@@ -170,11 +188,14 @@ Public Class Tryme
 
 
     Private Shared Sub LoadGraphV()
-        Using st = New SQLStore()
+        Using st = CreateSQLStore()
             Dim g As IGraph = New Graph()
             st.LoadGraphVirtual(g, UriFactory.Create("http://example.org/graph#Big500"))
             Print(g)
         End Using
     End Sub
 
+    Private Shared Function CreateSQLStore() As SQLStore
+        Return New SQLStore(storename)
+    End Function
 End Class
