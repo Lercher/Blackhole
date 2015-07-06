@@ -35,6 +35,9 @@ Public Class SQLStore
         With New SQLStoreTemplate(storeID)
             .ValidateAndThrow()
         End With
+        With New SQLStoreManagement
+            If Not .StoreExists(storeID) Then Throw New RdfException(String.Format("The specified store '{0}' does not exist.", storeID))
+        End With
         GuidGenerator = New HashGuidGenerator With {.HashProvider = New CityHashFunction}
         AlternateGuidGenerator = New AlternateHashGuidGenerator With {.HashProvider = New CityHashFunction}
         schema = String.Format("[bh_{0}]", storeID)
