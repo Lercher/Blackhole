@@ -121,6 +121,8 @@
   <ItemGroup>
     <Compile Include="Controllers\AssetsController.vb" />
     <Compile Include="Controllers\BlackholeBaseController.vb" />
+    <Compile Include="Controllers\BlackholeController.vb" />
+    <Compile Include="Controllers\StoresController.vb" />
     <Compile Include="Controllers\QueryController.vb" />
     <Compile Include="Controllers\QuerySyntaxController.vb" />
     <Compile Include="Controllers\Utilities\MimeTypeResolver.vb" />
@@ -202,6 +204,12 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="assets\bhapp.js" />
+    <Content Include="assets\styles.css">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="assets\Home.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="assets\Syntax.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

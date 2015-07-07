@@ -3,6 +3,8 @@
 Public Class BlackholeBaseController
     Inherits ApiController
 
+    ' http://www.asp.net/web-api/overview/formats-and-model-binding/parameter-binding-in-aspnet-web-api
+
     Public Shared Sub ConfigureRoutesAndHandlers(config As System.Web.Http.HttpConfiguration)
         config.Routes.MapHttpRoute(
             "Assets Route",
@@ -13,7 +15,7 @@ Public Class BlackholeBaseController
         config.Routes.MapHttpRoute(
             "Blackhole Storeless",
             "{controller}",
-            New With {.ext = "json"}
+            New With {.controller = "Blackhole", .ext = "json"}
         )
 
         config.Routes.MapHttpRoute(

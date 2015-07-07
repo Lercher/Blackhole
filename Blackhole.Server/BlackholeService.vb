@@ -18,6 +18,9 @@ Public Class BlackholeService
         Try
             server.OpenAsync.Wait()
             Console.WriteLine(String.Format("Listening on: {0}", config.BaseAddress))
+            If Debugger.IsAttached Then
+                System.Diagnostics.Process.Start(config.BaseAddress.ToString)
+            End If
             Return True
         Catch ex As Exception
             Throw
