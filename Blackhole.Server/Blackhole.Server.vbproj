@@ -119,10 +119,13 @@
     <Import Include="System.Threading.Tasks" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Controllers\AssetsController.vb" />
     <Compile Include="Controllers\BlackholeBaseController.vb" />
     <Compile Include="Controllers\QueryController.vb" />
-    <Compile Include="Controllers\SelectSyntaxController.vb" />
-    <Compile Include="Controllers\SyntaxCheckResult.vb" />
+    <Compile Include="Controllers\QuerySyntaxController.vb" />
+    <Compile Include="Controllers\Utilities\MimeTypeResolver.vb" />
+    <Compile Include="Controllers\Utilities\SyntaxCheckResult.vb" />
+    <Compile Include="Controllers\UpdateSyntaxController.vb" />
     <Compile Include="Formatters\SparqlResultsetFormatter.vb" />
     <Compile Include="Hashes\AlternateHashGuidGenerator.vb" />
     <Compile Include="Linq2SQL\BlackholeDB.designer.vb">
@@ -198,8 +201,13 @@
     <Service Include="{3259AA49-8AA1-44D3-9025-A0B520596A8C}" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="assets\bhapp.js" />
+    <Content Include="assets\Syntax.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Linq2SQL\SampleXmlMapping.xml" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

@@ -5,6 +5,12 @@ Public Class BlackholeBaseController
 
     Public Shared Sub ConfigureRoutesAndHandlers(config As System.Web.Http.HttpConfiguration)
         config.Routes.MapHttpRoute(
+            "Assets Route",
+            "assets/{*path}",
+            New With {.controller = "Assets"}
+        )
+
+        config.Routes.MapHttpRoute(
             "Blackhole Storeless",
             "{controller}",
             New With {.ext = "json"}
