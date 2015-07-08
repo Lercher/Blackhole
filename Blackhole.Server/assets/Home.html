@@ -15,7 +15,7 @@
         Blackhole &ndash; a 128bit Hash Based RDF Server with SQL Server as a Virtualized Backing Store.
     </header>
 
-    <section>
+    <section class="column">
         <h3>Syntax Checkers</h3>
         <ul>
             <li>
@@ -27,24 +27,26 @@
             <!-- TODO store list -->
         </ul>
     </section>
-    <section>
+    <section class="column">
         <h3>Existing Stores</h3>
-        <ul>
-            <li ng-repeat="st in D.stores">
-                <button ng-click="D.deletestore(st)">Delete</button>
-                <a  href="#" ng-href="{{st + '/'}}">{{st}}</a>
-            </li>
-        </ul>
+        <table>
+            <tr ng-repeat="st in D.stores">
+                <td><b>{{st}}</b></td>
+                <td><a  href="#" ng-href="{{'query/'+ st + '/'}}">Query</a></td>
+                <td><a  href="#" ng-href="{{'update/'+ st + '/'}}">Update</a></td>
+                <td><button ng-really-message="Any data is this store is removed. Are you sure?" ng-really-click="D.deletestore(st)">Delete</button></td>
+            </tr>
+        </table>
     </section>
-    <section>
+    <section class="column">
         <h3>Create a new store</h3>
         <p>
             <input ng-model="D.newstore" ng-validate="D.newstore" />
             <button ng-click="D.addstore()">Add</button>            
         </p>
     </section>
-    <section>
-        {{D.errormessage}}
+    <section class="column">
+        <b style="color: red;">{{D.errormessage}}</b>
     </section>
 
     <footer>

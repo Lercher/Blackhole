@@ -1,0 +1,53 @@
+﻿<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title>Blackhole SPARQL Query</title>
+    <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.3.13/angular.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.3.13/angular-sanitize.js"></script>
+    <script src="http://angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.13.0.js"></script>
+    <script src="/blackhole/assets/bhapp.js"></script>
+    <link href="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="/blackhole/assets/styles.css" rel="stylesheet"/>
+</head>
+<body ng-app="bh" ng-controller="bhQuery">
+    <header>
+        Blackhole SPARQL Query
+    </header>
+
+    <section>
+        <div>Enter a SPARQL query:</div>
+        <textarea id="start" class="full" name="query" ng-model="D.query"></textarea>
+        <button ng-click="D.execute()">Execute</button>
+    </section>
+
+    <section ng-show="R.errormessage">
+        <h3>Current error</h3>
+        <textarea readonly class="half" ng-bind="R.errormessage"></textarea>
+    </section>
+
+    <section ng-show="R.head">
+        <h3>Results</h3>
+        <table style="white-space: pre-line;">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th ng-repeat="v in R.head.vars">{{v}}</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr ng-repeat="r in R.results.bindings">
+                    <td>{{$index + 1|number}}</td>
+                    <td ng-repeat="v in R.head.vars" ng-style="{'font-style': r[v].type === 'uri' ? 'italic' : 'normal'}">{{r[v].value}}</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <footer>
+        Made for <a href="https://github.com/lercher/blackhole" title="sorce code">Blackhole</a>.
+        Useful links: <a href="http://en.wikipedia.org/wiki/SPARQL">SPARQL</a> (<a href="http://www.w3.org/TR/sparql11-overview/">v1.1 language spec</a>). 
+        Access your <a href="http://localhost:8090/blackhole">local Blackhole UI</a>.
+    </footer>
+</body>
+</html>
