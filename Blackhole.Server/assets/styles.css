@@ -5,6 +5,6 @@ header, footer { margin: 0px 0px 0px 0px; padding: 2em 1em 2em 1em; background-c
 header {margin-bottom: 1em; font-size: 120%; font-weight: bolder; }
 footer {margin-top: 1em; }
 section { margin: 0px 5px 0px 5px; }
-section.column { display: inline-block; width: 30em; vertical-align: top; }
+section.column { display: inline-block; width: 25em; vertical-align: top; }
 textarea.full { width: 100%; height: 30ex; font-family: monospace;  }
 textarea.half { width: 100%; height: 20ex; font-size: 90%; }

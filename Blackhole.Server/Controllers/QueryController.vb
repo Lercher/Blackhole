@@ -24,10 +24,6 @@ Public Class QueryController
         Return [Get](store, q.query)
     End Function
 
-    'Public Function Post(store As String, <FromBody> query As String) As SparqlResultSet
-    '    Return [Get](store, query)
-    'End Function
-
     Public Function [Get]() As HttpResponseMessage
         Return AssetsController.Serve(Request, "Query.html")
     End Function

@@ -14,14 +14,13 @@ Public Class DS
     Private factory As New GraphFactory
     Private graphUriDictionary As IDictionary(Of Guid, Uri)
 
-    Public Property UseVirtualization As Boolean = True
-
-    Public Shared Function CreateNonVirtualizing(store As SQLStore, ctx As BlackholeDBDataContext) As ISparqlDataset
-        Return New DS With {.store = store, .ctx = ctx, .UseVirtualization = False}
-    End Function
+    Protected Property UseVirtualization As Boolean = True
 
     Public Shared Function CreateVirtualizing(store As SQLStore, ctx As BlackholeDBDataContext) As ISparqlDataset
-        Return New DS With {.store = store, .ctx = ctx, .UseVirtualization = True}
+        Dim ds As DS = New DS With {.store = store, .ctx = ctx, .UseVirtualization = True}
+        ds.ctx.ObjectTrackingEnabled = False
+        store.RecycleCtx()
+        Return ds
     End Function
 
     Public Sub New()

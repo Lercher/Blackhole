@@ -125,6 +125,7 @@
     <Compile Include="Controllers\StoresController.vb" />
     <Compile Include="Controllers\QueryController.vb" />
     <Compile Include="Controllers\QuerySyntaxController.vb" />
+    <Compile Include="Controllers\UpdateController.vb" />
     <Compile Include="Controllers\Utilities\MimeTypeResolver.vb" />
     <Compile Include="Controllers\Utilities\SyntaxCheckResult.vb" />
     <Compile Include="Controllers\UpdateSyntaxController.vb" />
@@ -204,6 +205,9 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="assets\bhapp.js" />
+    <Content Include="assets\Update.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="assets\Query.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

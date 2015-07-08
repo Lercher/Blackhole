@@ -29,6 +29,7 @@ Public Class SQLStore
     Private ReadOnly AlternateGuidGenerator As IGuidGenerator
     Private Dataset As Query.Datasets.ISparqlDataset 'stores a context and needs to be disposed of
     Private ctx As BlackholeDBDataContext
+    Private mappingsource As System.Data.Linq.Mapping.MappingSource
     Private schema As String
 
     Public Sub New(ByVal storeID As String)
@@ -41,16 +42,14 @@ Public Class SQLStore
         GuidGenerator = New HashGuidGenerator With {.HashProvider = New CityHashFunction}
         AlternateGuidGenerator = New AlternateHashGuidGenerator With {.HashProvider = New CityHashFunction}
         schema = String.Format("[bh_{0}]", storeID)
+        mappingsource = BlackholeDBMappingSource.CreateMappingSourceFor(schema)
+        RecycleCtx()
+    End Sub
+
+    Friend Sub RecycleCtx()
+        If Not ctx Is Nothing Then ctx.Dispose()
         Dim cs = My.Settings.BlackholeConnectionString
-        ctx = New BlackholeDBDataContext(cs, BlackholeDBMappingSource.CreateMappingSourceFor(schema))
-#If False Then
-        For Each n In ctx.NODEs
-            Console.WriteLine("{0} {1} {2} {3} {4}", n.ID, n.AlternateID, n.type, n.value, n.metadata)
-        Next
-        For Each q In ctx.QUADs
-            Console.WriteLine("{0} {1} {2} {3} {4}", q.graph, q.subject, q.predicate, q.object, q.s25p5o1type)
-        Next
-#End If
+        ctx = New BlackholeDBDataContext(cs, mappingsource)
     End Sub
 
     ' ----------------------------------------------  IVirtualRdfProvider(Of Guid, Guid) -----------------------------------------------------------
@@ -224,6 +223,7 @@ DELETE FROM <%= schema %>.node WHERE node.type != 99
      WHERE quad.subject=node.id OR quad.predicate=node.id OR quad.object=node.id
   )</x>
         ctx.ExecuteCommand(x.Value, id)
+        RecycleCtx()
     End Sub
 
     Public Function ListGraphs() As IEnumerable(Of Uri) Implements IStorageProvider.ListGraphs
@@ -353,12 +353,8 @@ DELETE FROM <%= schema %>.node WHERE node.type != 99
     Public Sub Update(sparqlUpdate As String) Implements IUpdateableStorage.Update
         Dim Updateparser As New SparqlUpdateParser
         Dim cmds = Updateparser.ParseFromString(sparqlUpdate)
-#If DONTNETRDF_SUPPORTS_UPDATING_VIRTUALIZEDGRAPHS Then
         cmds.AlgebraOptimisers = New IAlgebraOptimiser() {New HashingAlgebraOptimizer(Me)}
         Dim dataset = DS.CreateVirtualizing(Me, ctx)
-#Else
-        Dim dataset = DS.CreateNonVirtualizing(Me, ctx)
-#End If
         Dim Processor As New LeviathanUpdateProcessor(dataset)
         Using tran = New TransactionScope
             Processor.ProcessCommandSet(cmds)
@@ -381,12 +377,17 @@ DELETE FROM <%= schema %>.node WHERE node.type != 99
         Dim gid = GetGraphID(graphUri)
         Dim tempgid = Guid.NewGuid
         If Not isEmpty(removals) Then
+            Dim n = 0, nn = 0
             Dim rems = From r In removals
                 Select q = CreateDBQuad(gid, r.Subject, r.Predicate, r.Object)
             For Each q In rems
                 Dim x = ctx.ExecuteCommand(String.Concat("DELETE ", schema, ".quad WHERE graph={0} AND subject={1} AND predicate={2} AND object={3}"), q.graph, q.subject, q.predicate, q.object)
-                Debug.Assert(x = 1, "Exactly one quad should be deleted")
+                Debug.Assert(x = 1, "Exactly one quad should have been deleted")
+                n += 1
+                nn += x
             Next
+            Console.WriteLine("On Remove, {0:n0} quads were supposed to be removed and {1:n0} quads were actually removed.", n, nn)
+            RecycleCtx()
         End If
         If Not isEmpty(additions) Then
             ' with a temporary graph id any insert succedes
@@ -395,34 +396,44 @@ DELETE FROM <%= schema %>.node WHERE node.type != 99
                 From add In additions
                 Select CreateDBQuad(tempgid, add.Subject, add.Predicate, add.Object)
             ctx.QUADs.InsertAllOnSubmit(inserts) 'if it bombs, then there are hash collisions in quads which is not very probable, if it is a good hash function
-        End If
-        ctx.SubmitChanges()
-        If Not isEmpty(additions) Then
+            ctx.SubmitChanges()
+
             ' delete duplicates and give the inserted ones the proper gid:
-            ctx.ExecuteCommand(String.Concat("DELETE i FROM ", schema, ".quad i INNER JOIN ", schema, ".quad q ON q.subject=i.subject AND q.predicate=i.predicate AND q.object=i.object WHERE q.graph={0} AND i.graph={1}"), gid, tempgid)
+            Dim deleteduplicatequads = String.Concat("DELETE i FROM ", schema, ".quad i INNER JOIN ", schema, ".quad q ON q.subject=i.subject AND q.predicate=i.predicate AND q.object=i.object WHERE q.graph={0} AND i.graph={1}")
+            Dim numberduplicates = ctx.ExecuteCommand(deleteduplicatequads, gid, tempgid)
+            Console.WriteLine("On Insert, {0:n0} duplicate quads were removed. This figure should be zero.", numberduplicates)
+            RecycleCtx()
+
             ' add nodes for quads that have no nodes
             Dim missingsubjguids = From q In ctx.QUADs Where q.graph = tempgid Select qid = q.subject Where Not (Aggregate n In ctx.NODEs Where n.ID = qid Into Any()) Select qid
             Dim missingpredguids = From q In ctx.QUADs Where q.graph = tempgid Select qid = q.predicate Where Not (Aggregate n In ctx.NODEs Where n.ID = qid Into Any()) Select qid
             Dim missingobjguids = From q In ctx.QUADs Where q.graph = tempgid Select qid = q.object Where Not (Aggregate n In ctx.NODEs Where n.ID = qid Into Any()) Select qid
-            Dim d As New Dictionary(Of System.Guid, INode)
+            Dim guidToNode As New Dictionary(Of System.Guid, INode)
             For Each add In additions
-                d(GetID(add.Subject)) = add.Subject
-                d(GetID(add.Predicate)) = add.Predicate
-                d(GetID(add.Object)) = add.Object
+                guidToNode(GetID(add.Subject)) = add.Subject
+                guidToNode(GetID(add.Predicate)) = add.Predicate
+                guidToNode(GetID(add.Object)) = add.Object
             Next
+            Dim missingguids = missingsubjguids.Concat(missingpredguids).Concat(missingobjguids).Distinct.ToArray
+            Console.WriteLine("On Insert, there are {0:n0} distinct guids that don't have nodes yet.", missingguids.Length)
             Dim missingnodes =
-                From m In missingsubjguids.Concat(missingpredguids).Concat(missingobjguids)
-                Distinct
-                Let node = d(m)
+                From missingguid In missingguids
+                Let node = guidToNode(missingguid)
                 Select CreateDBNode(gid, node)
+                :
             ctx.NODEs.InsertAllOnSubmit(missingnodes)
-            ctx.SubmitChanges()
+            ctx.SubmitChanges(Data.Linq.ConflictMode.ContinueOnConflict)
             DetectCollisions(ctx)
-            ctx.ExecuteCommand(String.Concat("UPDATE ", schema, ".quad SET graph={0} WHERE graph={1}"), gid, tempgid)
+            Dim movetempquads As String = String.Concat("UPDATE ", schema, ".quad SET graph={0} WHERE graph={1}")
+            Dim movedquads = ctx.ExecuteCommand(movetempquads, gid, tempgid)
+            Console.WriteLine("On Insert, {0:n0} temporary quads have been moved to their supposed graph id.", movedquads)
         End If
         If Not isEmpty(removals) Then
             ' delete all nodes without quads that reference them
-            ctx.ExecuteCommand(String.Concat("DELETE FROM ", schema, ".node WHERE node.type != 99 AND NOT EXISTS (SELECT * FROM ", schema, ".quad WHERE quad.subject=node.id OR quad.predicate=node.id OR quad.object=node.id)"))
+            Dim deleteunneedednodes = String.Concat("DELETE FROM ", schema, ".node WHERE node.type != 99 AND NOT EXISTS (SELECT * FROM ", schema, ".quad WHERE quad.subject=node.id OR quad.predicate=node.id OR quad.object=node.id)")
+            Dim unneedednodes = ctx.ExecuteCommand(deleteunneedednodes)
+            RecycleCtx()
+            Console.WriteLine("On Remove, {0:n0} no more needed nodes have been removed", unneedednodes)
         End If
     End Sub
 

@@ -7,8 +7,42 @@ if (!window.location.pathname.match(/\/$/)) {
 angular.module("bh", ['ui.bootstrap']);
 
 
+angular.module("bh").controller("bhUpdate", function ($scope, $http, $timeout) {
+    $scope.D = { execute: execute, update: 'delete data { <http://www.example.org> a "URI" };\ninsert data { <http://www.example.org> a "URI" }' };
+    $scope.store = window.location.pathname.split('/').slice(-2)[0];
+
+    $scope.$watch("D.update", function () {
+        $http.post("/blackhole/UpdateSyntax/", { query: $scope.D.update })
+            .success(function (data) {
+                $scope.R = data;
+            })
+            .error(function (data, status, headers, config) {
+                $scope.R = { errormessage: "Error " + status + ": " + data.statusMessage };
+            })
+        ;
+    });
+
+    $timeout(function () {
+        var s = document.querySelector('#start');
+        s && s.focus();
+    }, 100);
+
+    function execute() {
+        $http.post("", { update: $scope.D.update })
+            .success(function (data) {
+                $scope.R = data;
+            })
+            .error(function (data, status, headers, config) {
+                $scope.R = { errormessage: "Error " + status + ": " + data.statusMessage };
+            })
+        ;
+    }
+
+});
+
 angular.module("bh").controller("bhQuery", function ($scope, $http, $timeout) {
     $scope.D = { execute: execute, query: 'select * where {$s $p $o}'};
+    $scope.store = window.location.pathname.split('/').slice(-2)[0];
 
     $scope.$watch("D.query", function () {
         $http.post("/blackhole/QuerySyntax/", { query: $scope.D.query })
@@ -41,14 +75,17 @@ angular.module("bh").controller("bhQuery", function ($scope, $http, $timeout) {
 
 
 angular.module("bh").controller("bhSyntax", function ($scope, $http, $timeout) {
-    $scope.D = {};
-    $scope.D.ref = 0;
-    $scope.D.query = '';
+    $scope.D = {ref: 0, query: ''};
+    $scope.R = {ref: -1, errormessage: null, normalized: null}
+
+    $scope.typ = window.location.pathname.split('/').slice(-2)[0].replace("Syntax", "");
 
     $scope.$watch("D.query", function () {
         $scope.D.ref++;
         $http.post("", $scope.D)
             .success(function (data) {
+                if ($scope.R.ref > data.ref)
+                    return;
                 $scope.R = data;
             })
             .error(function (data, status, headers, config) {

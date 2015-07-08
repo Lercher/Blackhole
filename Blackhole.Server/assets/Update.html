@@ -2,7 +2,7 @@
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="utf-8" />
-    <title>Blackhole Syntax Checker</title>
+    <title>Blackhole SPARQL Update</title>
     <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.3.13/angular.js"></script>
     <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.3.13/angular-sanitize.js"></script>
     <script src="http://angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.13.0.js"></script>
@@ -10,27 +10,30 @@
     <link href="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet"/>
     <link href="/blackhole/assets/styles.css" rel="stylesheet"/>
 </head>
-<body ng-app="bh" ng-controller="bhSyntax">
+<body ng-app="bh" ng-controller="bhUpdate">
     <header>
-        Blackhole Syntax Checker for {{typ}} | <a href="../">Home</a>
+        Blackhole SPARQL Update on {{store}} | <a ng-href="../../Query/{{store}}/">Query {{store}}</a> | <a href="../../">Home</a> |
     </header>
 
     <section>
-    <form action="" method="post">
-        <div>Enter some SPARQL {{typ}} code</div>
-        <textarea id="start" class="full" name="query" ng-model="D.query"></textarea>
-        <!--       <button>Submit</button> Click submit, if you want to see the raw results.               -->
-    </form>
+        <div>Enter a SPARQL update statement:</div>
+        <textarea id="start" class="full" name="update" ng-model="D.update"></textarea>
+        <button ng-click="D.execute()">Execute</button>
     </section>
 
-    <section>
-        <h3>Normalized results</h3>
-        <textarea readonly class="half" ng-bind="R.errormessage || R.normalized"></textarea>
+    <section ng-show="R.errormessage">
+        <h3>Current error</h3>
+        <textarea readonly class="half" ng-bind="R.errormessage"></textarea>
+    </section>
+
+    <section ng-show="R.result">
+        <h3>Result</h3>
+        <p ng-bind="R.result"></p>
     </section>
 
     <footer>
         Made for <a href="https://github.com/lercher/blackhole" title="sorce code">Blackhole</a>.
-        Useful links: <a href="http://en.wikipedia.org/wiki/SPARQL">SPARQL</a> (<a href="http://www.w3.org/TR/sparql11-overview/">v1.1 language spec</a>).         
+        Useful links: <a href="http://en.wikipedia.org/wiki/SPARQL">SPARQL</a> (<a href="http://www.w3.org/TR/sparql11-overview/">v1.1 language spec</a>). 
     </footer>
 </body>
 </html>

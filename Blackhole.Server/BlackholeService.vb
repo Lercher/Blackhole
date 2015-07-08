@@ -7,13 +7,25 @@ Public Class BlackholeService
     Private server As HttpSelfHostServer
 
     Public Function Start(hc As Topshelf.HostControl) As Boolean
-        Console.WriteLine("This is Blackhole Server, a hash based RDF triple store for SQL Server.")
-
         Dim cn = System.Net.Dns.GetHostEntry("localhost").HostName
         Dim config = New HttpSelfHostConfiguration(String.Format("http://{0}:8090/blackhole", cn))
 
-        BlackholeBaseController.ConfigureRoutesAndHandlers(config)
+        Const LINE As String = "---------------------------------------------------------------------------------"
+        Console.WriteLine(LINE)
+        Console.WriteLine("This is Blackhole Server, a hash based RDF triple store for SQL Server.")
+        Console.WriteLine(LINE)
+        Console.WriteLine("Start me with the argument help to get more help text, e.g.:")
+        Console.WriteLine("  Blackhole.Server help")
+        Console.WriteLine("  Blackhole.Server install --localsystem")
+        Console.WriteLine("  Blackhole.Server start")
+        Console.WriteLine("  Blackhole.Server stop")
+        Console.WriteLine("  Blackhole.Server uninstall")
+        Console.WriteLine(LINE)
+        Console.WriteLine("There is an interactive UI on:")
+        Console.WriteLine("  {0}", config.BaseAddress)
+        Console.WriteLine(LINE)
 
+        BlackholeBaseController.ConfigureRoutesAndHandlers(config)
         server = New HttpSelfHostServer(config)
         Try
             server.OpenAsync.Wait()
