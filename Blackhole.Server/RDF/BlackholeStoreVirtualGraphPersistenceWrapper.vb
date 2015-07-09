@@ -13,4 +13,5 @@ Public Class BlackholeStoreVirtualGraphPersistenceWrapper
         Dim id = provider.GetID(preMaterializedValue)
         Return BlackholeNodeFactory.CreateVirtual(id, provider, preMaterializedValue)
     End Function
+
 End Class

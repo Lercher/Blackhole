@@ -9,14 +9,14 @@ Public Class UpdateController
         Dim r = New UpdateResult
 
         If String.IsNullOrWhiteSpace(q.update) Then
-            r.result = "OK - Nothing to do"
+            r.result = "OK - Nothing to do."
             Return r
         End If
 
         Try
             Using st = New SQLStore(store)
                 st.Update(q.update)
-                r.result = "OK - Updated"
+                r.result = String.Format("OK - Updated. {0:n0} triple(s) have been removed and {1:n0} inserted.", st.NumberOfRemovals, st.NumberOfInserts)
             End Using
         Catch ex As Exception
             r.errormessage = ex.Message
