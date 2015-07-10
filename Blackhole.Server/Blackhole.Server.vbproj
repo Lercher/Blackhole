@@ -143,7 +143,7 @@
     </Compile>
     <Compile Include="BlackholeService.vb" />
     <Compile Include="Linq2SQL\BlackholeDBMappingSource.vb" />
-    <Compile Include="RDF\BlackholeStoreVirtualGraphPersistenceWrapper.vb" />
+    <Compile Include="VirtualNodes\BlackholeStoreVirtualGraphPersistenceWrapper.vb" />
     <Compile Include="RDF\DS.vb" />
     <Compile Include="Hashes\CityHashFunction.vb" />
     <Compile Include="Hashes\HashGuidGenerator.vb" />
@@ -151,7 +151,7 @@
     <Compile Include="Hashes\IHashFunction.vb" />
     <Compile Include="RDF\SQLStoreManagement.vb" />
     <Compile Include="RDF\SQLStoreTemplate.vb" />
-    <Compile Include="RDF\StoreVirtualGraphPersistenceWrapper.vb" />
+    <Compile Include="VirtualNodes\StoreVirtualGraphPersistenceWrapper.vb" />
     <Compile Include="Tryme.vb" />
     <Compile Include="VirtualNodes\HashingAlgebraOptimizer.vb" />
     <Compile Include="MainModule.vb" />
