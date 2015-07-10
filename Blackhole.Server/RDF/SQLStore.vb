@@ -152,13 +152,16 @@ Public Class SQLStore
 
     ' see https://bitbucket.org/dotnetrdf/dotnetrdf/src/df95e1283cecd046b1f6fbf6fb1d396c888dfe20/Libraries/core/net40/Web/BaseSparqlServer.cs?at=default
     Public Sub Query(rdfHandler As IRdfHandler, resultsHandler As ISparqlResultsHandler, sparqlQuery As String) Implements IQueryableStorage.Query
+        Console.WriteLine(sparqlQuery)
         Dim Parser As New SparqlQueryParser(SparqlQuerySyntax.Extended)
         'P.ExpressionFactories = ...
         'P.QueryOptimiser = ...
         Dim Query = Parser.ParseFromString(sparqlQuery)
-        Query.AlgebraOptimisers = New IAlgebraOptimiser() {New HashingAlgebraOptimizer(Me)} : Dim dataset = DS.CreateVirtualizing(Me, ctx)
+        'Dim dataset = DS.Create(Me, ctx, Virtualizing:=True) : Query.AlgebraOptimisers = New IAlgebraOptimiser() {New HashingAlgebraOptimizer(Me)}
+        Dim dataset = DS.Create(Me, ctx, Virtualizing:=False)
         Dim Processor As New LeviathanQueryProcessor(dataset)
         Processor.ProcessQuery(rdfHandler, resultsHandler, Query)
+        Console.WriteLine("Query done ------------------------------------------")
     End Sub
 
     Public Function Query(sparqlQuery As String) As Object Implements IQueryableStorage.Query
@@ -353,12 +356,13 @@ DELETE FROM <%= schema %>.node WHERE node.type != 99
     ' ---------------------------------------------- IUpdateableStorage -----------------------------------------------------------
 
     Public Sub Update(sparqlUpdate As String) Implements IUpdateableStorage.Update
+        Console.WriteLine(sparqlUpdate)
         NumberOfInserts = 0
         NumberOfRemovals = 0
         Dim Updateparser As New SparqlUpdateParser
         Dim cmds = Updateparser.ParseFromString(sparqlUpdate)
         cmds.AlgebraOptimisers = New IAlgebraOptimiser() {New HashingAlgebraOptimizer(Me)}
-        Dim dataset = DS.CreateVirtualizing(Me, ctx)
+        Dim dataset = DS.Create(Me, ctx, Virtualizing:=True)
         Dim Processor As New LeviathanUpdateProcessor(dataset)
         Using tran = New TransactionScope
             Processor.ProcessCommandSet(cmds)
@@ -371,6 +375,7 @@ DELETE FROM <%= schema %>.node WHERE node.type != 99
             End If
             tran.Complete()
         End Using
+        Console.WriteLine("{0:n0} removals, {1:n0} inserts", NumberOfRemovals, NumberOfInserts)
     End Sub
 
     Private Shared Function isEmpty(ts As IEnumerable(Of Triple)) As Boolean

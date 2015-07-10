@@ -16,8 +16,8 @@ Public Class DS
 
     Protected Property UseVirtualization As Boolean = True
 
-    Public Shared Function CreateVirtualizing(store As SQLStore, ctx As BlackholeDBDataContext) As ISparqlDataset
-        Dim ds As DS = New DS With {.store = store, .ctx = ctx, .UseVirtualization = True}
+    Public Shared Function Create(store As SQLStore, ctx As BlackholeDBDataContext, Virtualizing As Boolean) As ISparqlDataset
+        Dim ds As DS = New DS With {.store = store, .ctx = ctx, .UseVirtualization = Virtualizing}
         ds.ctx.ObjectTrackingEnabled = False
         store.RecycleCtx()
         Return ds
