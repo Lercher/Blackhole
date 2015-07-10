@@ -161,7 +161,7 @@ Public Class SQLStore
         'Dim dataset = DS.Create(Me, ctx, Virtualizing:=False)
         Dim Processor As New LeviathanQueryProcessor(dataset)
         Processor.ProcessQuery(rdfHandler, resultsHandler, Query)
-        Console.WriteLine("Query done ------------------------------------------")
+        Console.WriteLine("Query done ------------------------------------------ {0:t}", Now)
     End Sub
 
     Public Function Query(sparqlQuery As String) As Object Implements IQueryableStorage.Query
@@ -375,7 +375,7 @@ DELETE FROM <%= schema %>.node WHERE node.type != 99
             End If
             tran.Complete()
         End Using
-        Console.WriteLine("{0:n0} removals, {1:n0} inserts", NumberOfRemovals, NumberOfInserts)
+        Console.WriteLine("Update done: {0:n0} removals, {1:n0} inserts ----------------------- {2:t}", NumberOfRemovals, NumberOfInserts, Now)
     End Sub
 
     Private Shared Function isEmpty(ts As IEnumerable(Of Triple)) As Boolean
