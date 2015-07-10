@@ -1,0 +1,22 @@
+﻿select * where {$s $p $o}
+
+------------------
+
+PREFIX : <http://www.brightstardb.com/example/article#>
+SELECT *
+WHERE {
+  $res a <http://www.brightstardb.com/example/article/> .
+  $res :title $o .
+}
+
+------------------
+
+PREFIX : <http://www.brightstardb.com/example/article#>
+SELECT DISTINCT $res $title $abstr 
+WHERE {
+  $res a <http://www.brightstardb.com/example/article/> .
+  $res :title $title .
+  $res :abstr $abstr .
+  $res :tags $any .
+}
+ORDER BY desc($res)

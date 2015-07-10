@@ -157,8 +157,8 @@ Public Class SQLStore
         'P.ExpressionFactories = ...
         'P.QueryOptimiser = ...
         Dim Query = Parser.ParseFromString(sparqlQuery)
-        'Dim dataset = DS.Create(Me, ctx, Virtualizing:=True) : Query.AlgebraOptimisers = New IAlgebraOptimiser() {New HashingAlgebraOptimizer(Me)}
-        Dim dataset = DS.Create(Me, ctx, Virtualizing:=False)
+        Dim dataset = DS.Create(Me, ctx, Virtualizing:=True) : Query.AlgebraOptimisers = New IAlgebraOptimiser() {New HashingAlgebraOptimizer(Me)}
+        'Dim dataset = DS.Create(Me, ctx, Virtualizing:=False)
         Dim Processor As New LeviathanQueryProcessor(dataset)
         Processor.ProcessQuery(rdfHandler, resultsHandler, Query)
         Console.WriteLine("Query done ------------------------------------------")
