@@ -33,6 +33,7 @@ Public Class SQLStore
     Private schema As String
     Public Property NumberOfRemovals As Integer = 0
     Public Property NumberOfInserts As Integer = 0
+    Private NodeCache As New Dictionary(Of Guid, INode)
 
     Public Sub New(ByVal storeID As String)
         With New SQLStoreTemplate(storeID)
@@ -101,33 +102,48 @@ Public Class SQLStore
     End Function
 
     Public Function GetValue(g As IGraph, id As Guid) As INode Implements IVirtualRdfProvider(Of Guid, Guid).GetValue
-        Static cache As New Dictionary(Of Guid, INode)
         Dim result As INode = Nothing
-        SyncLock cache
-            If Not cache.TryGetValue(id, result) Then
+        SyncLock NodeCache
+            If Not NodeCache.TryGetValue(id, result) Then
                 result = GetValueImpl(g, id)
-                ' Console.WriteLine("Materialized {0} to {1}", id, result)
-                cache(id) = result
+                ' Console.WriteLine("Materialized {0} to {1}: {2}", id, result.NodeType, result)
+                NodeCache(id) = result
             End If
         End SyncLock
-        Return result
+        Return Tools.CopyNode(result, g) ' is a no-op if the graph is then same, but results to a virtual node's CopyNode operation
     End Function
 
     Private Function GetValueImpl(ByVal g As IGraph, ByVal id As Guid) As INode
         If Guid.Empty.Equals(id) Then Return Nothing
         Dim n =
-                Aggregate q In ctx.NODEs
-                Where q.ID = id
+                Aggregate nn In ctx.NODEs
+                Where nn.ID = id
                 Into FirstOrDefault()
         If n IsNot Nothing Then Return BlackholeNodeFactory.Create(g, BlackholeNodeFactory.ToNodeType(n.type), id, n.value, n.metadata)
         Return g.CreateBlankNode(id.ToString)
     End Function
+
+    ' see http://www.dotnetrdf.org/tracker/Issues/IssueDetail.aspx?id=450 for details
+    Private Sub PrePopulateNodeCache(g As IGraph)
+        Static done As Boolean = False
+        SyncLock NodeCache
+            If done Then Return
+            Dim qy = From nn In ctx.NODEs
+                     Where nn.type = CByte(NodeType.Literal)
+                     Select nn.ID, nn.value, nn.metadata, nn.type
+            For Each item In qy
+                NodeCache(item.ID) = BlackholeNodeFactory.Create(g, BlackholeNodeFactory.ToNodeType(item.type), item.ID, item.value, item.metadata)
+            Next
+            done = True
+        End SyncLock
+    End Sub
 
     Public Sub LoadGraphVirtual(g As IGraph, graphUri As Uri) Implements IVirtualRdfProvider(Of Guid, Guid).LoadGraphVirtual
         'LoadGraph(g, graphUri) : Return
         ' works with:  LoadGraph(g, graphUri):Return ' but not with my virtual nodes as follows
         Dim gid = GetGraphID(graphUri)
         g.BaseUri = graphUri
+        PrePopulateNodeCache(g)
         Dim qy =
                 From q In ctx.QUADs
                 Where q.graph = gid

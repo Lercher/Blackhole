@@ -38,13 +38,9 @@ Global
 		{279D486C-854E-404E-9C6A-188A67145907}.Debug|x86.ActiveCfg = Debug|ia64
 		{279D486C-854E-404E-9C6A-188A67145907}.Release|Any CPU.ActiveCfg = Release|ia64
 		{279D486C-854E-404E-9C6A-188A67145907}.Release|Mixed Platforms.ActiveCfg = Release|ia64
-		{279D486C-854E-404E-9C6A-188A67145907}.Release|Mixed Platforms.Build.0 = Release|ia64
 		{279D486C-854E-404E-9C6A-188A67145907}.Release|x86.ActiveCfg = Release|ia64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(Performance) = preSolution
-		HasPerformanceSessions = true
 	EndGlobalSection
 EndGlobal
