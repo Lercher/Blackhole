@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+    <Fragment>
+        <ComponentGroup Id="Blackhole.Server.References">
+            <Component Id="cmpFC33AF89465CCDA7581A39E4167F92A0" Directory="INSTALLFOLDER" Guid="{780192E9-27C0-42B9-A55A-84936AC6D004}">
+                <File Id="filC83C00BA94347B46C7EB1C8D197DD6E0" KeyPath="yes" Source="$(var.Blackhole.Server.TargetDir)\dotNetRDF.dll" />
+            </Component>
+            <Component Id="cmp3464F8730E573D338954EC7195CFB4A4" Directory="INSTALLFOLDER" Guid="{DE6558FC-3FD6-4F05-A886-21961641EF59}">
+                <File Id="fil73F07CE42A5EF653313AD307E0E68BDC" KeyPath="yes" Source="$(var.Blackhole.Server.TargetDir)\HtmlAgilityPack.dll" />
+            </Component>
+            <Component Id="cmpBC4FC00A26E7D32479D42D3411317FC5" Directory="INSTALLFOLDER" Guid="{1CD2A7AB-A86F-4AC0-BF14-4FF07CFA1D42}">
+                <File Id="fil90A8AAD9FC612906D405476D61CEA3F4" KeyPath="yes" Source="$(var.Blackhole.Server.TargetDir)\Newtonsoft.Json.dll" />
+            </Component>
+            <Component Id="cmp951C7EBE17544CA84676F038C2C2F43D" Directory="INSTALLFOLDER" Guid="{B3055E89-DECE-4B58-86C8-B95128FF7721}">
+                <File Id="filA4FC621332F695262035722CEA309078" KeyPath="yes" Source="$(var.Blackhole.Server.TargetDir)\System.Data.HashFunction.CityHash.dll" />
+            </Component>
+            <Component Id="cmpD53FA0A431A7A5D1A5A16ED659D791AA" Directory="INSTALLFOLDER" Guid="{31267722-5089-4F4E-9AD2-25822CC9859F}">
+                <File Id="filF1B08788451F67699707152D7C2B7B21" KeyPath="yes" Source="$(var.Blackhole.Server.TargetDir)\System.Data.HashFunction.Core.dll" />
+            </Component>
+            <Component Id="cmp9277F3D950377D978F52A16A311BC6EF" Directory="INSTALLFOLDER" Guid="{BC8658EE-E9E0-4C1A-BB50-8E8E2AEA035B}">
+                <File Id="fil0CE1CB5C79A9501A36996895390B4D70" KeyPath="yes" Source="$(var.Blackhole.Server.TargetDir)\System.Data.HashFunction.Interfaces.dll" />
+            </Component>
+            <Component Id="cmp6FD941A56CFB6288079AD725FC4C6CC9" Directory="INSTALLFOLDER" Guid="{AEE6E455-9EA4-42B9-A950-F3558E8EC5DC}">
+                <File Id="filF62ABB9A1DBA3DB8EA89A66F6CDF9023" KeyPath="yes" Source="$(var.Blackhole.Server.TargetDir)\System.Net.Http.Formatting.dll" />
+            </Component>
+            <Component Id="cmpFB681CCE3A69379D12C6F0AE4D93F3F6" Directory="INSTALLFOLDER" Guid="{93A2112E-B8DC-4384-8BE7-33137683B852}">
+                <File Id="filA1D2A96B8EEEDD0F4224B9862791C67B" KeyPath="yes" Source="$(var.Blackhole.Server.TargetDir)\System.Web.Cors.dll" />
+            </Component>
+            <Component Id="cmpC5EC6A3B14718C1EF45DA9B64D240E2A" Directory="INSTALLFOLDER" Guid="{21C4E84D-F136-453B-B703-831A390BDE00}">
+                <File Id="filC33973AA4375096DF609108DCEBCDAEB" KeyPath="yes" Source="$(var.Blackhole.Server.TargetDir)\System.Web.Http.Cors.dll" />
+            </Component>
+            <Component Id="cmp940FE7A07D2029407DBF496CFD2024DE" Directory="INSTALLFOLDER" Guid="{EDC5CB17-2388-4720-969D-9D26680F066F}">
+                <File Id="fil39F0FF631CB3F22F905630991EE3970E" KeyPath="yes" Source="$(var.Blackhole.Server.TargetDir)\System.Web.Http.dll" />
+            </Component>
+            <Component Id="cmp60E7B1CDC4CAC20864C5BD59A188A361" Directory="INSTALLFOLDER" Guid="{F4A71242-304A-435E-AAAE-B2853E0E97FE}">
+                <File Id="fil38B8CAD4572DE1460C0944DBE21CB4EA" KeyPath="yes" Source="$(var.Blackhole.Server.TargetDir)\System.Web.Http.SelfHost.dll" />
+            </Component>
+            <Component Id="cmp7CDD66DA602D1BF1D98817E56A263BC2" Directory="INSTALLFOLDER" Guid="{B827CDD4-F5EC-449F-B406-F7DC5DDB512D}">
+                <File Id="fil1944B2DB72DDBFA10FA06BC8F086BF56" KeyPath="yes" Source="$(var.Blackhole.Server.TargetDir)\Topshelf.dll" />
+            </Component>
+            <Component Id="cmpE032656DD98CCA8AD9B991A32DC3492C" Directory="INSTALLFOLDER" Guid="{1C353DBF-04C8-42F9-9E22-B1E427D5B274}">
+                <File Id="filCFE141EE6E421B953BA67466D140AA1D" KeyPath="yes" Source="$(var.Blackhole.Server.TargetDir)\VDS.Common.dll" />
+            </Component>
+        </ComponentGroup>
+    </Fragment>
+</Wix>

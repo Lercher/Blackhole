@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product
+    Id="*"
+    Name="Blackhole Server"
+    Language="1033"
+    Version="1.0.0.0"
+    Manufacturer="Martin Lercher"
+    UpgradeCode="50bddb91-8241-47b2-b6d7-f3bc50fe3674">
+
+    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+
+    <Media Id='1' Cabinet='BlackholeServer.cab' EmbedCab='yes' />
+
+    <PropertyRef Id='NETFRAMEWORK45'/>
+    <Condition Message='The installation requires .NET Framework 4.5'><![CDATA[Installed OR NETFRAMEWORK45]]></Condition>
+
+    <Feature Id="ProductFeature" Title="Blackhole Service" Level="1">
+      <ComponentGroupRef Id="ProductComponents" />
+    </Feature>
+  </Product>
+
+  <Fragment>
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id='DesktopFolder' Name='Desktop' />
+      <Directory Id='ProgramFiles64Folder'>
+        <Directory Id="INSTALLFOLDER" Name="Blackhole" />
+      </Directory>
+        <Directory Id='ProgramMenuFolder' Name='Program Menu'>
+          <Directory Id='DirBlackholeStartMenue' Name='Blackhole'>
+            <Component Id='BlackholeStartMenue' Guid='E0AD3F79-ED08-4107-8F9B-B4EAE52EEF91' Transitive='no'>
+              <RemoveFolder Id='StartMenuRemove' On='uninstall' />
+              <RegistryValue Root='HKCU' Key='Software\Blackhole\Installer' Name='BlackholeStartMenue' Type='string' Value='Blackhole directory' KeyPath='yes' />
+              <Shortcut Id='StartServiceCmdline' Name='1 Service on Commandline' Show='normal' WorkingDirectory='INSTALLFOLDER' Target='[INSTALLFOLDER]Blackhole.Server.exe'/>
+            </Component>
+          </Directory>
+        </Directory>
+
+    </Directory>
+  </Fragment>
+
+  <Fragment>
+    <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+      <ComponentRef Id="BlackholeStartMenue"/>
+      
+      <!-- 
+      to get the following componentgroups:
+      * Add Blackhole.Server as a Project Reference to the WiX Project
+      * set it's properties to Harvest=True
+      * In WiX 3.9 R2 the "Project Output Groups" seems to be ignored, all is harvested but this doesn't hurt.
+      * Unload and edit the Blackhole.Setup.wixproj file
+      * add at it's top an reload:
+        <PropertyGroup>
+          <EnableProjectHarvesting>True</EnableProjectHarvesting>
+        </PropertyGroup>  
+      * see http://wixtoolset.org/documentation/manual/v3/msbuild/target_reference/harvestprojects.html
+      -->
+      <ComponentGroupRef Id="Blackhole.Server.Binaries"/>
+      <ComponentGroupRef Id="Blackhole.Server.Symbols"/>
+      <ComponentGroupRef Id="Blackhole.Server.Content"/>
+      
+      <!-- From file References.wxs generated once by heat dir -->
+      <ComponentGroupRef Id="Blackhole.Server.References"/>
+    </ComponentGroup>
+  </Fragment>
+
+</Wix>

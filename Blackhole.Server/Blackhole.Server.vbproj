@@ -227,7 +227,7 @@
     <Content Include="assets\Syntax.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Linq2SQL\SampleXmlMapping.xml" />
+    <None Include="Linq2SQL\SampleXmlMapping.xml" />
     <Content Include="SomeQueries.txt" />
   </ItemGroup>
   <ItemGroup />

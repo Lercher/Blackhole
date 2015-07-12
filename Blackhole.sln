@@ -10,16 +10,36 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{594615
 		.nuget\NuGet.targets = .nuget\NuGet.targets
 	EndProjectSection
 EndProject
+Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "Blackhole.Setup", "Blackhole.Setup\Blackhole.Setup.wixproj", "{279D486C-854E-404E-9C6A-188A67145907}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		Debug|Mixed Platforms = Debug|Mixed Platforms
+		Debug|x86 = Debug|x86
 		Release|Any CPU = Release|Any CPU
+		Release|Mixed Platforms = Release|Mixed Platforms
+		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{52EADC14-A809-4045-82CD-88C5B051D093}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{52EADC14-A809-4045-82CD-88C5B051D093}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{52EADC14-A809-4045-82CD-88C5B051D093}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{52EADC14-A809-4045-82CD-88C5B051D093}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{52EADC14-A809-4045-82CD-88C5B051D093}.Debug|x86.ActiveCfg = Debug|Any CPU
 		{52EADC14-A809-4045-82CD-88C5B051D093}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{52EADC14-A809-4045-82CD-88C5B051D093}.Release|Any CPU.Build.0 = Release|Any CPU
+		{52EADC14-A809-4045-82CD-88C5B051D093}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{52EADC14-A809-4045-82CD-88C5B051D093}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{52EADC14-A809-4045-82CD-88C5B051D093}.Release|x86.ActiveCfg = Release|Any CPU
+		{279D486C-854E-404E-9C6A-188A67145907}.Debug|Any CPU.ActiveCfg = Debug|ia64
+		{279D486C-854E-404E-9C6A-188A67145907}.Debug|Mixed Platforms.ActiveCfg = Debug|ia64
+		{279D486C-854E-404E-9C6A-188A67145907}.Debug|Mixed Platforms.Build.0 = Debug|ia64
+		{279D486C-854E-404E-9C6A-188A67145907}.Debug|x86.ActiveCfg = Debug|ia64
+		{279D486C-854E-404E-9C6A-188A67145907}.Release|Any CPU.ActiveCfg = Release|ia64
+		{279D486C-854E-404E-9C6A-188A67145907}.Release|Mixed Platforms.ActiveCfg = Release|ia64
+		{279D486C-854E-404E-9C6A-188A67145907}.Release|Mixed Platforms.Build.0 = Release|ia64
+		{279D486C-854E-404E-9C6A-188A67145907}.Release|x86.ActiveCfg = Release|ia64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
