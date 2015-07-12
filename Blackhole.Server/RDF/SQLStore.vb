@@ -124,17 +124,21 @@ Public Class SQLStore
     End Function
 
     ' see http://www.dotnetrdf.org/tracker/Issues/IssueDetail.aspx?id=450 for details
-    Private Sub PrePopulateNodeCache(g As IGraph)
-        Static done As Boolean = False
+    Private Sub PrePopulateNodeCache(g As IGraph, gid As Guid)
         SyncLock NodeCache
-            If done Then Return
+            'ctx.Log = Console.Out
+            Dim alls = From q In ctx.QUADs Where q.graph = gid Select q.subject
+            Dim allp = From q In ctx.QUADs Where q.graph = gid Select q.predicate
+            Dim allo = From q In ctx.QUADs Where q.graph = gid Select q.object
+            Dim all = alls.Concat(allp).Concat(allo)
             Dim qy = From nn In ctx.NODEs
                      Where nn.type = CByte(NodeType.Literal)
+                     Where Aggregate q In all Where q = nn.ID Into Any()
                      Select nn.ID, nn.value, nn.metadata, nn.type
             For Each item In qy
                 NodeCache(item.ID) = BlackholeNodeFactory.Create(g, BlackholeNodeFactory.ToNodeType(item.type), item.ID, item.value, item.metadata)
             Next
-            done = True
+            'ctx.Log = Nothing
         End SyncLock
     End Sub
 
@@ -143,7 +147,7 @@ Public Class SQLStore
         ' works with:  LoadGraph(g, graphUri):Return ' but not with my virtual nodes as follows
         Dim gid = GetGraphID(graphUri)
         g.BaseUri = graphUri
-        PrePopulateNodeCache(g)
+        PrePopulateNodeCache(g, gid)
         Dim qy =
                 From q In ctx.QUADs
                 Where q.graph = gid
