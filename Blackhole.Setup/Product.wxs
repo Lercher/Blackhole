@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
   <Product
     Id="*"
     Name="Blackhole Server"
@@ -8,7 +8,7 @@
     Manufacturer="Martin Lercher"
     UpgradeCode="50bddb91-8241-47b2-b6d7-f3bc50fe3674">
 
-    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" Platform="x64"/>
 
     <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
 
@@ -33,7 +33,12 @@
             <Component Id='BlackholeStartMenue' Guid='E0AD3F79-ED08-4107-8F9B-B4EAE52EEF91' Transitive='no'>
               <RemoveFolder Id='StartMenuRemove' On='uninstall' />
               <RegistryValue Root='HKCU' Key='Software\Blackhole\Installer' Name='BlackholeStartMenue' Type='string' Value='Blackhole directory' KeyPath='yes' />
-              <Shortcut Id='StartServiceCmdline' Name='1 Service on Commandline' Show='normal' WorkingDirectory='INSTALLFOLDER' Target='[INSTALLFOLDER]Blackhole.Server.exe'/>
+              <util:InternetShortcut Id="WebAppShortcut" Name="Blackhole UI" Target="http://localhost:8090/blackhole/"/>
+              <Shortcut Id='PGM1' Name='1 on Commandline' Show='normal' WorkingDirectory='INSTALLFOLDER' Target='[INSTALLFOLDER]Blackhole.Server.exe'/>
+              <Shortcut Id='PGM2' Name='2 Install as Service' Show='normal' WorkingDirectory='INSTALLFOLDER' Target='[INSTALLFOLDER]Blackhole.Server.exe' Arguments='install --localsystem'/>
+              <Shortcut Id='PGM3' Name='3 Start Service' Show='normal' WorkingDirectory='INSTALLFOLDER' Target='[INSTALLFOLDER]Blackhole.Server.exe' Arguments='start'/>
+              <Shortcut Id='PGM4' Name='4 Stop Service' Show='normal' WorkingDirectory='INSTALLFOLDER' Target='[INSTALLFOLDER]Blackhole.Server.exe' Arguments='stop'/>
+              <Shortcut Id='PGM5' Name='5 Uninstall as Service' Show='normal' WorkingDirectory='INSTALLFOLDER' Target='[INSTALLFOLDER]Blackhole.Server.exe' Arguments='uninstall'/>
             </Component>
           </Directory>
         </Directory>
