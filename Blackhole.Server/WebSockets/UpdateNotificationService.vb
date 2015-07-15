@@ -27,7 +27,7 @@ Public Class UpdateNotificationService
     Public Class CFG
         Public Property socket As IWebSocketConnection
         Public Sub SetTrigger(Trigger As String)
-            socket.Send("Echo: " & Trigger)
+            socket.Send(String.Format("[{0} | {1}]", Trigger, socket.ConnectionInfo.Path))
         End Sub
     End Class
 End Class

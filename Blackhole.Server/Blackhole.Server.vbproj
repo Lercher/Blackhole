@@ -127,6 +127,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Controllers\AssetsController.vb" />
+    <Compile Include="Controllers\MonitorController.vb" />
     <Compile Include="Controllers\Utilities\BlackholeBaseController.vb" />
     <Compile Include="Controllers\BlackholeController.vb" />
     <Compile Include="Controllers\StoresController.vb" />
@@ -215,6 +216,12 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="assets\bhapp.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="assets\Monitor.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="assets\wsraw.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="assets\Update.html">

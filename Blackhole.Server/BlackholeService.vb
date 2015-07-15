@@ -34,7 +34,7 @@ Public Class BlackholeService
             uns = New UpdateNotificationService
             uns.Start()
             If Debugger.IsAttached Then
-                System.Diagnostics.Process.Start(config.BaseAddress.ToString)
+                System.Diagnostics.Process.Start(config.BaseAddress.ToString & "/")
             End If
             Return True
         Catch ex As Exception

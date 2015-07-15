@@ -35,10 +35,10 @@ Public Class AssetsController
             Console.WriteLine("{0}: {1}", CInt(r.StatusCode), path)
             Return r
         End If
-        Dim etag = String.Format("""{0:X}""", IO.File.GetLastWriteTimeUtc(fn).GetHashCode)
+        Dim etag = String.Format("""{0:X8}""", IO.File.GetLastWriteTimeUtc(fn).GetHashCode)
         If Request.Headers.IfNoneMatch IsNot Nothing AndAlso Request.Headers.IfNoneMatch.FirstOrDefault IsNot Nothing AndAlso etag = Request.Headers.IfNoneMatch.FirstOrDefault.Tag Then
             r.StatusCode = Net.HttpStatusCode.NotModified
-            Console.WriteLine("{0}: {1} - ETAG {2}", CInt(r.StatusCode), path, etag)
+            Console.WriteLine("{0}: ETAG {2} - {1}", CInt(r.StatusCode), path, etag)
             Return r
         End If
         Dim file = IO.File.Open(fn, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read)
@@ -47,7 +47,7 @@ Public Class AssetsController
         r.Headers.ETag = New System.Net.Http.Headers.EntityTagHeaderValue(etag)
         Dim mt = MimeTypeResolver.GetMimetypeFromExtension(IO.Path.GetExtension(fn))
         r.Content.Headers.ContentType = MediaTypeHeaderValue.Parse(mt)
-        Console.WriteLine("{0}: {1} - ETAG {2}", CInt(r.StatusCode), path, etag)
+        Console.WriteLine("{0}: ETAG {2} - {1}", CInt(r.StatusCode), path, etag)
         Return r
     End Function
 End Class

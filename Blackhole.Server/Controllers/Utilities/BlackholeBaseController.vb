@@ -14,6 +14,7 @@ Public Class BlackholeBaseController
         config.Routes.MapHttpRoute("Update with Extension", "update/{store}.{ext}", New With {.controller = "Update", .ext = "json"})
         config.Routes.MapHttpRoute("Query", "query/{store}", New With {.controller = "Query", .ext = "json"})
         config.Routes.MapHttpRoute("Update", "update/{store}", New With {.controller = "Update", .ext = "json"})
+        config.Routes.MapHttpRoute("Monitor", "monitor/{store}", New With {.controller = "Monitor"})
         config.Routes.MapHttpRoute("Blackhole", "{controller}", New With {.controller = "Blackhole", .ext = "json"})
         config.IncludeErrorDetailPolicy = IncludeErrorDetailPolicy.Always 'TODO: Should be configurable
         config.Formatters.Add(New SparqlResultsetFormatter)

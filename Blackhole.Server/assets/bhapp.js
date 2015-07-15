@@ -7,6 +7,51 @@ if (!window.location.pathname.match(/\/$/)) {
 angular.module("bh", ['ui.bootstrap']);
 
 
+angular.module("bh").controller("bhMonitor", function ($scope, $http, $timeout) {
+    $scope.D = { execute: execute, query: 'ask {$s $p $o}', ws: null };
+    $scope.R = { errormessage: null};
+    $scope.log = [];
+    $scope.store = window.location.pathname.split('/').slice(-2)[0];
+
+    $scope.$watch("D.query", function () {
+        $http.post("/blackhole/QuerySyntax/", { query: $scope.D.query })
+            .success(function (data) {
+                $scope.R = data;
+            })
+            .error(function (data, status, headers, config) {
+                $scope.R = { errormessage: "Error " + status + ": " + data.statusMessage };
+            })
+        ;
+    });
+
+    $timeout(function () {
+        var s = document.querySelector('#start');
+        s && s.focus();
+    }, 100);
+
+    execute();
+
+    // end
+
+    function execute() {
+        if ($scope.D.ws) {
+            var s = $scope.D.query;
+            log(">> " + s);
+            $scope.D.ws.send(s);
+        } else {
+            var wsImpl = window.WebSocket || window.MozWebSocket;
+            $scope.D.ws = new wsImpl('ws://localhost:8091/' + $scope.store);
+            $scope.D.ws.onopen = onopen;
+            $scope.D.ws.onclose = onclose;
+            $scope.D.ws.onmessage = onmsg;
+        }
+    }
+    function log(s) { $scope.log.push(s);  }
+    function onopen() { log("[connection open]"); $scope.$digest(); }
+    function onclose() { log("[connection close]"); $scope.$digest(); }
+    function onmsg(e) { log(e.data); $scope.$digest(); }
+});
+
 angular.module("bh").controller("bhUpdate", function ($scope, $http, $timeout) {
     $scope.D = { execute: execute, update: 'delete data { <http://www.example.org> a "URI" };\ninsert data { <http://www.example.org> a "URI" }' };
     $scope.store = window.location.pathname.split('/').slice(-2)[0];
