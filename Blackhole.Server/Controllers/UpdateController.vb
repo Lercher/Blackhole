@@ -15,6 +15,7 @@ Public Class UpdateController
 
         Try
             Using st = New SQLStore(store)
+                st.Notify = UpdateNotificationService.Instance
                 st.Update(q.update)
                 r.result = String.Format("OK - Updated. {0:n0} triple(s) have been removed and {1:n0} inserted.", st.NumberOfRemovals, st.NumberOfInserts)
             End Using

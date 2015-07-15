@@ -48,7 +48,7 @@ angular.module("bh").controller("bhMonitor", function ($scope, $http, $timeout) 
     }
     function log(s) { $scope.log.push(s);  }
     function onopen() { log("[connection open]"); $scope.$digest(); }
-    function onclose() { log("[connection close]"); $scope.$digest(); }
+    function onclose() { log("[connection close]"); $scope.D.ws = null; $scope.$digest(); }
     function onmsg(e) { log(e.data); $scope.$digest(); }
 });
 

@@ -14,6 +14,7 @@ Public Class QueryController
         If String.IsNullOrWhiteSpace(query) Then Return Nothing
 
         Using st = New SQLStore(store)
+            st.Notify = UpdateNotificationService.Instance
             Dim r = st.Query(query)
             Dim rs = TryCast(r, SparqlResultSet)
             Return rs

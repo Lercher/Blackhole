@@ -180,7 +180,11 @@
     <Compile Include="VirtualNodes\VirtualLiteralNode.vb" />
     <Compile Include="VirtualNodes\BlackholeNodeFactory.vb" />
     <Compile Include="VirtualNodes\VirtualUriNode.vb" />
+    <Compile Include="WebSockets\ConsoleNotify.vb" />
+    <Compile Include="WebSockets\INotify.vb" />
+    <Compile Include="WebSockets\NullNotify.vb" />
     <Compile Include="WebSockets\UpdateNotificationService.vb" />
+    <Compile Include="WebSockets\WebSocketNotifier.vb" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Linq2SQL\BlackholeDB.dbml.layout">

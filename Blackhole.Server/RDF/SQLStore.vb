@@ -31,11 +31,16 @@ Public Class SQLStore
     Private ctx As BlackholeDBDataContext
     Private mappingsource As System.Data.Linq.Mapping.MappingSource
     Private schema As String
+    Public ReadOnly Store As String
     Public Property NumberOfRemovals As Integer = 0
     Public Property NumberOfInserts As Integer = 0
+    Private Property Inserts As List(Of Triple)
     Private NodeCache As New Dictionary(Of Guid, INode)
+    Public Property Notify As INotify = New ConsoleNotify
+
 
     Public Sub New(ByVal storeID As String)
+        Me.Store = storeID
         With New SQLStoreTemplate(storeID)
             .ValidateAndThrow()
         End With
@@ -172,7 +177,7 @@ Public Class SQLStore
 
     ' see https://bitbucket.org/dotnetrdf/dotnetrdf/src/df95e1283cecd046b1f6fbf6fb1d396c888dfe20/Libraries/core/net40/Web/BaseSparqlServer.cs?at=default
     Public Sub Query(rdfHandler As IRdfHandler, resultsHandler As ISparqlResultsHandler, sparqlQuery As String) Implements IQueryableStorage.Query
-        Console.WriteLine(sparqlQuery)
+        Notify.Notify(Store, sparqlQuery)
         Dim Parser As New SparqlQueryParser(SparqlQuerySyntax.Extended)
         'P.ExpressionFactories = ...
         'P.QueryOptimiser = ...
@@ -181,7 +186,7 @@ Public Class SQLStore
         'Dim dataset = DS.Create(Me, ctx, Virtualizing:=False)
         Dim Processor As New LeviathanQueryProcessor(dataset)
         Processor.ProcessQuery(rdfHandler, resultsHandler, Query)
-        Console.WriteLine("Query done ------------------------------------------ {0:t}", Now)
+        Notify.Notify(Store, String.Format("Query done ------------------------------------------ {0:t}", Now))
     End Sub
 
     Public Function Query(sparqlQuery As String) As Object Implements IQueryableStorage.Query
@@ -376,9 +381,10 @@ DELETE FROM <%= schema %>.node WHERE node.type != 99
     ' ---------------------------------------------- IUpdateableStorage -----------------------------------------------------------
 
     Public Sub Update(sparqlUpdate As String) Implements IUpdateableStorage.Update
-        Console.WriteLine(sparqlUpdate)
+        Notify.Notify(Store, sparqlUpdate)
         NumberOfInserts = 0
         NumberOfRemovals = 0
+        Inserts = New List(Of Triple)
         Dim Updateparser As New SparqlUpdateParser
         Dim cmds = Updateparser.ParseFromString(sparqlUpdate)
         cmds.AlgebraOptimisers = New IAlgebraOptimiser() {New HashingAlgebraOptimizer(Me)}
@@ -393,9 +399,14 @@ DELETE FROM <%= schema %>.node WHERE node.type != 99
                 RecycleCtx()
                 Console.WriteLine("After {0:n0} Removals, {1:n0} no more needed nodes have been removed", NumberOfRemovals, unneedednodes)
             End If
-            tran.Complete()
+            tran.Complete()        
         End Using
-        Console.WriteLine("Update done: {0:n0} removals, {1:n0} inserts ----------------------- {2:t}", NumberOfRemovals, NumberOfInserts, Now)
+        Notify.Notify(Store, String.Format("Update done: {0:n0} removals, {1:n0} inserts ----------------------- {2:t}", NumberOfRemovals, NumberOfInserts, Now))
+        If NumberOfInserts > 0 Then
+            Dim proc = CreateQueryProcessorForWebsockets(Inserts)
+            Notify.InsertedNodes(Store, proc, New HashingAlgebraOptimizer(Me))
+        End If
+        Inserts = Nothing
     End Sub
 
     Private Shared Function isEmpty(ts As IEnumerable(Of Triple)) As Boolean
@@ -475,9 +486,19 @@ DELETE FROM <%= schema %>.node WHERE node.type != 99
             RecycleCtx()
             Console.WriteLine("On Insert, {0:n0} temporary quads have been moved to their supposed graph id.", movedquads)
             NumberOfInserts += movedquads
+
+            Me.Inserts.AddRange(additions)
         End If
     End Sub
 
+    Public Shared Function CreateQueryProcessorForWebsockets(triples As IEnumerable(Of Triple)) As ISparqlQueryProcessor
+        Dim g As IGraph = New Graph
+        g.Assert(triples)
+        Dim ds = New VDS.RDF.TripleStore()
+        ds.Add(g)
+        Dim proc = New LeviathanQueryProcessor(ds)
+        Return proc
+    End Function
 
 #Region "IDisposable Support"
     Private disposedValue As Boolean ' To detect redundant calls
