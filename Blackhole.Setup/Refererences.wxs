@@ -41,6 +41,9 @@
             <Component Id="cmpE032656DD98CCA8AD9B991A32DC3492C" Directory="INSTALLFOLDER" Guid="{1C353DBF-04C8-42F9-9E22-B1E427D5B274}">
                 <File Id="filCFE141EE6E421B953BA67466D140AA1D" KeyPath="yes" Source="$(var.Blackhole.Server.TargetDir)\VDS.Common.dll" />
             </Component>
+            <Component Id="cmpFleck" Directory="INSTALLFOLDER" Guid="{3659EEBF-CB7D-4247-9B4A-63E0D226BFB2}">
+              <File Id="filFleckDll" KeyPath="yes" Source="$(var.Blackhole.Server.TargetDir)\Fleck.dll" />
+            </Component>
         </ComponentGroup>
     </Fragment>
 </Wix>
