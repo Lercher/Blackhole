@@ -179,6 +179,7 @@
     <Compile Include="VirtualNodes\VirtualLiteralNode.vb" />
     <Compile Include="VirtualNodes\BlackholeNodeFactory.vb" />
     <Compile Include="VirtualNodes\VirtualUriNode.vb" />
+    <Compile Include="WebSockets\UpdateNotificationService.vb" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Linq2SQL\BlackholeDB.dbml.layout">
@@ -234,9 +235,7 @@
     <None Include="Linq2SQL\SampleXmlMapping.xml" />
     <Content Include="SomeQueries.txt" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="WebSockets\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

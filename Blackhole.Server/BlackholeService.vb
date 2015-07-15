@@ -5,6 +5,7 @@ Public Class BlackholeService
     Implements IDisposable
 
     Private server As HttpSelfHostServer
+    Private uns As UpdateNotificationService
 
     Public Function Start(hc As Topshelf.HostControl) As Boolean
         Dim cn = System.Net.Dns.GetHostEntry("localhost").HostName
@@ -30,6 +31,8 @@ Public Class BlackholeService
         Try
             server.OpenAsync.Wait()
             Console.WriteLine(String.Format("Listening on: {0}", config.BaseAddress))
+            uns = New UpdateNotificationService
+            uns.Start()
             If Debugger.IsAttached Then
                 System.Diagnostics.Process.Start(config.BaseAddress.ToString)
             End If
@@ -55,13 +58,16 @@ Public Class BlackholeService
         If Not Me.disposedValue Then
             If disposing Then
                 ' TODO: dispose managed state (managed objects).
-                If Not server Is Nothing Then
+                If server IsNot Nothing Then
                     server.CloseAsync.Wait()
                     server.Dispose()
                     server = Nothing
                 End If
+                If uns IsNot Nothing Then
+                    uns.Stop()
+                    uns = Nothing
+                End If
             End If
-
             ' TODO: free unmanaged resources (unmanaged objects) and override Finalize() below.
             ' TODO: set large fields to null.
         End If
