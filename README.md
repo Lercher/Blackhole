@@ -11,8 +11,11 @@ In this project we bring together the following technologies:
 Provides the SPARQL parsers and query execution processors, together with it's virtualization 
 infrastructure for efficient storage.
 
+We currently (07/2015) need a slightly [modified version](https://bitbucket.org/MartinLercher/dotnetrdf) of it to make join
+queries on virtualized nodes work. See [CORE-452](http://dotnetrdf.org/tracker/Issues/IssueDetail.aspx?id=452) 
+for details
 
-### MS SQL Server
+### [MS SQL Server](https://en.wikipedia.org/wiki/Microsoft_SQL_Server)
 Provides robust storage for quads and nodes. Opens the solution for further 
 tooling, standardized backups and e.g. replication.
 
