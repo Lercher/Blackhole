@@ -50,7 +50,7 @@
   <ItemGroup>
     <Reference Include="dotNetRDF, Version=1.0.9.0, Culture=neutral, PublicKeyToken=6055ffe4c97cc780, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\BitBucket\dotNetRDF\Libraries\core\net40\bin\Release\dotNetRDF.dll</HintPath>
+      <HintPath>..\binaries\dotNetRDF.dll</HintPath>
     </Reference>
     <Reference Include="Fleck, Version=0.13.0.52, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Fleck.0.13.0.52\lib\net40\Fleck.dll</HintPath>
@@ -225,9 +225,9 @@
     <Content Include="assets\Monitor.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="assets\wsraw.html">
+    <None Include="assets\wsraw.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
+    </None>
     <Content Include="assets\Update.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -244,7 +244,7 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <None Include="Linq2SQL\SampleXmlMapping.xml" />
-    <Content Include="SomeQueries.txt" />
+    <None Include="SomeQueries.txt" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
