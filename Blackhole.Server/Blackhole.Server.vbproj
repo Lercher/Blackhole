@@ -111,7 +111,7 @@
     </Reference>
     <Reference Include="VDS.Common, Version=1.7.0.0, Culture=neutral, PublicKeyToken=ab5f4eb908061bf0, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\BitBucket\vds-common\src\net40-client\bin\Release\VDS.Common.dll</HintPath>
+      <HintPath>..\binaries\VDS.Common.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
