@@ -20,7 +20,7 @@
 
     <section>
         <div>Enter a SPARQL update statement:</div>
-        <textarea id="start" class="full" name="update" ng-model="D.update"></textarea>
+        <textarea id="start" class="full" name="update" ng-model="D.update" ng-model-options="{debounce:{'default':250,'blur':0}}"></textarea>
         <button ng-click="D.execute()">Execute</button>
     </section>
 
