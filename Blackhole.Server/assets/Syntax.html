@@ -18,7 +18,7 @@
     <section>
     <form action="" method="post">
         <div>Enter some SPARQL {{typ}} code</div>
-        <textarea id="start" class="full" name="query" ng-model="D.query"></textarea>
+        <textarea id="start" class="full" name="query" ng-model="D.query" ng-model-options="{debounce:250}"></textarea>
         <!--       <button>Submit</button> Click submit, if you want to see the raw results.               -->
     </form>
     </section>
