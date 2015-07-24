@@ -13,14 +13,17 @@ infrastructure for efficient storage.
 
 We currently (07/2015) need a slightly [modified version](https://bitbucket.org/MartinLercher/dotnetrdf) of it to make join
 queries on virtualized nodes work. See [CORE-452](http://dotnetrdf.org/tracker/Issues/IssueDetail.aspx?id=452) 
-for details
+for details.
+
+The patch is now (late 07/2015) integrated with dotNetRDF's sources, so version 1.0.10 will be fine.
+
 
 ### [MS SQL Server](https://en.wikipedia.org/wiki/Microsoft_SQL_Server)
 Provides robust storage for quads and nodes. Opens the solution for further 
 tooling, standardized backups and e.g. replication.
 
 Storage for each *store* consists of a schema bh_ *store* and two tables, bh_ *store*.QUAD and
- bh_ *store*.NODE and nothing else.
+bh_ *store*.NODE and nothing else.
 
 
 ### [Linq to SQL](https://msdn.microsoft.com/en-us/data/cc298428.aspx)
