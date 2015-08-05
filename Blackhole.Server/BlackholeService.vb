@@ -9,6 +9,8 @@ Public Class BlackholeService
     Public Function Start(hc As Topshelf.HostControl) As Boolean
         Dim cn = System.Net.Dns.GetHostEntry("localhost").HostName
         Dim config = New HttpSelfHostConfiguration(String.Format("http://{0}:8090/blackhole", cn))
+        config.MaxReceivedMessageSize = 256L * 1024L * 1024L '256 Megs Upload
+
 
         Const LINE As String = "---------------------------------------------------------------------------------"
         Console.WriteLine(LINE)
