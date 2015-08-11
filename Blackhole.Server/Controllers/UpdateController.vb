@@ -17,10 +17,13 @@ Public Class UpdateController
             Using st = New SQLStore(store)
                 st.Notify = UpdateNotificationService.Instance
                 st.Update(q.update)
-                r.result = String.Format("OK - Updated. {0:n0} triple(s) have been removed and {1:n0} inserted.", st.NumberOfRemovals, st.NumberOfInserts)
+                r.result = String.Format("OK - Updated. {0:n0} triple(s) have been removed and {1:n0} inserted. {2:n0} chars parsed.", st.NumberOfRemovals, st.NumberOfInserts, st.NumberOfCharactersParsed)
             End Using
         Catch ex As Exception
             r.errormessage = ex.Message
+#If DEBUG Then
+            r.stacktrace = ex.StackTrace
+#End If
         End Try
         Return r
     End Function
@@ -36,6 +39,9 @@ Public Class UpdateController
     Public Class UpdateResult
         Public Property errormessage As String
         Public Property result As String
+#If DEBUG Then
+        Public Property stacktrace As String
+#End If
     End Class
 
 End Class

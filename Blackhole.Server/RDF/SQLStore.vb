@@ -34,6 +34,7 @@ Public Class SQLStore
     Public ReadOnly Store As String
     Public Property NumberOfRemovals As Integer = 0
     Public Property NumberOfInserts As Integer = 0
+    Public Property NumberOfCharactersParsed As Integer = 0
     Private Property Inserts As List(Of Triple)
     Private NodeCache As New Dictionary(Of Guid, INode)
     Public Property Notify As INotify = New ConsoleNotify
@@ -178,6 +179,7 @@ Public Class SQLStore
     ' see https://bitbucket.org/dotnetrdf/dotnetrdf/src/df95e1283cecd046b1f6fbf6fb1d396c888dfe20/Libraries/core/net40/Web/BaseSparqlServer.cs?at=default
     Public Sub Query(rdfHandler As IRdfHandler, resultsHandler As ISparqlResultsHandler, sparqlQuery As String) Implements IQueryableStorage.Query
         Notify.Notify(Store, sparqlQuery)
+        NumberOfCharactersParsed = sparqlQuery.Length
         Dim Parser As New SparqlQueryParser(SparqlQuerySyntax.Extended)
         'P.ExpressionFactories = ...
         'P.QueryOptimiser = ...
@@ -320,7 +322,7 @@ DELETE FROM <%= schema %>.node WHERE node.type != 99
     Public Sub SaveGraph(g As IGraph) Implements IStorageProvider.SaveGraph
         Dim gid = GetGraphID(g)
         Dim alternategid = AlternateGuidGenerator.fromGraphUri(g.BaseUri)
-        Using tran = New TransactionScope
+        Using tran = CreateTransactionScope()
             DeleteGraph(g.BaseUri)
 
             'we can have identical node values from graphs saved with different uris, so we load them.
@@ -343,6 +345,11 @@ DELETE FROM <%= schema %>.node WHERE node.type != 99
             tran.Complete()
         End Using
     End Sub
+
+    Private Function CreateTransactionScope() As TransactionScope
+        Dim options = New TransactionOptions With {.IsolationLevel = IsolationLevel.ReadCommitted}
+        Return New TransactionScope(TransactionScopeOption.Required, options)
+    End Function
 
     ' Replacement for g.Nodes
     Private Shared Function SPONodesDistinct(g As IGraph) As IEnumerable(Of INode)
@@ -384,13 +391,15 @@ DELETE FROM <%= schema %>.node WHERE node.type != 99
         Notify.Notify(Store, sparqlUpdate)
         NumberOfInserts = 0
         NumberOfRemovals = 0
+        NumberOfCharactersParsed = sparqlUpdate.Length
         Inserts = New List(Of Triple)
         Dim Updateparser As New SparqlUpdateParser
         Dim cmds = Updateparser.ParseFromString(sparqlUpdate)
+        Notify.Notify(Store, String.Format("{0:n0} characters parsed for update.", NumberOfCharactersParsed))
         cmds.AlgebraOptimisers = New IAlgebraOptimiser() {New HashingAlgebraOptimizer(Me)}
         Dim dataset = DS.Create(Me, ctx, Virtualizing:=True)
         Dim Processor As New LeviathanUpdateProcessor(dataset)
-        Using tran = New TransactionScope
+        Using tran = CreateTransactionScope()
             Processor.ProcessCommandSet(cmds)
             If NumberOfRemovals > 0 Then
                 ' delete all nodes without quads that reference them
@@ -399,7 +408,7 @@ DELETE FROM <%= schema %>.node WHERE node.type != 99
                 RecycleCtx()
                 Console.WriteLine("After {0:n0} Removals, {1:n0} no more needed nodes have been removed", NumberOfRemovals, unneedednodes)
             End If
-            tran.Complete()        
+            tran.Complete()
         End Using
         Notify.Notify(Store, String.Format("Update done: {0:n0} removals, {1:n0} inserts ----------------------- {2:t}", NumberOfRemovals, NumberOfInserts, Now))
         If NumberOfInserts > 0 Then
